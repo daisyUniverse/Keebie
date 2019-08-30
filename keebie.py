@@ -5,6 +5,7 @@ import sys
 import signal
 import os
 import json
+import argparse
 
 def signal_handler(signal, frame):
     sys.exit(0)
@@ -22,12 +23,15 @@ def writeConfig(lineNum, data):
     out.writelines(lines)
     out.close()
 
-args = len(sys.argv) - 1
-arg = sys.argv[args]
-dev = InputDevice(config()[0])
+parser = argparse.ArgumentParser()
+parser.add_argument("--layers", help="Show saved layer files", action="store_true")
+parser.add_argument("--device", help="Change target device")
+parser.add_argument("--add", help="Add new keys", action="store_true")
+
+args = parser.parse_args()
 layerDir = os.getcwd() + "/layers/"
 scriptDir = os.getcwd() + "/scripts/"
-dev.grab()
+
 
 print("Welcome to Keebie")
 
@@ -100,35 +104,43 @@ def keebLoop(): # reading the keyboard
                     value = readJson(config()[1])[keys]
                     if key.keycode == keys:
                         if value.startswith("layer:"):
-                            writeConfig(1, value.split(':')[-1] + ".json")
-                            print("Switched to layer file: " + value.split(':')[-1] + ".json")
-                            break
+                            if os.path.exists(layerDir+value.split(':')[-1] + ".json") == False:
+                                createLayer(value.split(':')[-1]+".json")
+                                print("Created layer file: " + value.split(':')[-1]+".json")
+                                writeConfig(1, value.split(':')[-1] + ".json")
+                                print("Switched to layer file: " + value.split(':')[-1] + ".json")
+                                break
+                            else:
+                                writeConfig(1, value.split(':')[-1] + ".json")
+                                print("Switched to layer file: " + value.split(':')[-1] + ".json")
+                                break
                         elif value.startswith("script:"):
-                            os.system('bash ' + scriptDir + value.split(':')[-1] + '.sh')
-                            print("Executing bash script: " + value.split(':')[-1] + '.sh')
+                            os.system('bash ' + scriptDir + value.split(':')[-1])
+                            print("Executing bash script: " + value.split(':')[-1])
                             break
                         elif value.startswith("py:"):
-                            os.system('python ' + scriptDir + value.split(':')[-1] + '.py')
-                            print("Executing python script: " + value.split(':')[-1] + '.py')
+                            os.system('python ' + scriptDir + value.split(':')[-1])
+                            print("Executing python script: " + value.split(':')[-1])
                             break
                         else:
                             os.system(value)
                             print(keys+": "+value)
 
-if arg == '-l' or arg == '--layers': # check args
+if args.layers:
     getLayers()
-elif arg == '-a' or arg == '--add':
+elif args.add:
     addKey()
-elif arg == '-h' or arg == '--help':
-    print("-l, --list | List all saved layer files")
-    print("-a, --add  | add new macro to the current layer")
-    print("-h, --help | I wonder.")
-    print("\n #MACRO PREFIX# ")
-    print(" (use these in --add mode) \n")
-    print("layer:layername     | create a new layer file, and assign a key to switch to that layer")
-    print("script:scriptname   | launches <scriptname.sh> from your scripts folder")
-    print("py:pythonscriptname | launches <pythonscriptname.py> from your scripts folder")
-    print("\n")
-else:
+elif args.device:
+    dev = InputDevice("/dev/input/by-id/"+args.device)
+    if os.path.exists(layerDir+args.device+".json") == False:
+        createLayer(args.device+".json")
+        print("Created layer file: " + layerDir+args.device+".json")
+    writeConfig(1, args.device+".json")
+    print("Switched to layer file: " + args.device+".json")
+    dev.grab()
     keebLoop()
-
+else:
+    dev = InputDevice(config()[0])
+    dev.grab()
+    writeConfig(1, "default.json")
+    keebLoop()

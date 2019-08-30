@@ -28,20 +28,22 @@ And that should have you up and ready to roll. If when you run the script, you g
 
 #### Usage:
 
-Just dump the files anywhere and run `python keebie.py` and if everything it up and running, you should be good to go. Test your second keyboard by pressing spacebar which is bound to a test message by default
+Just dump the files anywhere and run `python keebie.py` and if everything it up and running, you should be good to go. Test your second keyboard by pressing spacebar which is bound to a test message by default. To run with more keyboards, run the script again with the `--device <dev-id>` option for however many devices you want to add. 
 
 #### Options:
 
-`-a` or  `--add`: Launches into the script addition shell. Instructions should be pretty straightforward. Any commands entered will be launched, and if you try to bind the same key twice, your new value will overwrite the old one. there is some special syntax that can be used in this entry that will allow for special functions:
+`--device <device-id>` Launches th script attatched to specified device, creating a new layer file specifically for it if it doesnt already exist. Press ESC to return to default layer.
+
+ `--add`: Launches into the script addition shell. Instructions should be pretty straightforward. Any commands entered will be launched, and if you try to bind the same key twice, your new value will overwrite the old one. there is some special syntax that can be used in this entry that will allow for special functions:
 
 - `layer:<layername>`: Will create a layer file in  `/layers/`, and let you bind switching to it to any key
   - ( this will create a layer with a default layout of only having `ESC` return you to the default layer, you can add to it by launching the script, switching to it, then running `python keebie.py -a` again )
-- `script:<scriptname>`: Will launch a `<scriptname.sh>` from `/scripts/`
-  - ( same as `bash ~/whereveryourfolderis/scripts/scriptname.sh` )
-- `py:<pythonscript>`: Will launch `<pythonscript.py>` from `/scripts/` 
-  - ( same as `python ~/whereveryourfolderis/scripts/pythonscript.py` )
+- `script:<scriptname.sh (options)>`: Will launch a `< scriptname.sh (options) >` from `/scripts/`
+  - ( same as `bash ~/whereveryourfolderis/scripts/scriptname.sh (options)` )
+- `py:<pythonscript.py (options)>`: Will launch `< pythonscript.py (options) >` from `/scripts/` 
+  - ( same as `python ~/whereveryourfolderis/scripts/pythonscript.py (options)` )
 
-`-l` or `--list`: Lists all layer files and all of their contents
+`--list`: Lists all layer files and all of their contents
 
 `-h` or `--help`: Shows a short help message
 
