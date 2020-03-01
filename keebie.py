@@ -126,12 +126,16 @@ def keebLoop(): # reading the keyboard
                             os.system(value)
                             print(keys+": "+value)
 
+if args.device:
+    dev = InputDevice("/dev/input/by-id/"+args.device)
+else:
+    dev = InputDevice(config()[0])
+
 if args.layers:
     getLayers()
 elif args.add:
     addKey()
 elif args.device:
-    dev = InputDevice("/dev/input/by-id/"+args.device)
     if os.path.exists(layerDir+args.device+".json") == False:
         createLayer(args.device+".json")
         print("Created layer file: " + layerDir+args.device+".json")
@@ -140,7 +144,6 @@ elif args.device:
     dev.grab()
     keebLoop()
 else:
-    dev = InputDevice(config()[0])
     dev.grab()
     writeConfig(1, "default.json")
     keebLoop()
