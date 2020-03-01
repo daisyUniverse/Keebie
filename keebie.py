@@ -126,9 +126,13 @@ def keebLoop(): # reading the keyboard
                             os.system(value)
                             print(keys+": "+value)
 
+dev = InputDevice(config()[0])
+
 if args.layers:
     getLayers()
 elif args.add:
+    dev.grab()
+    writeConfig(1, "default.json")
     addKey()
 elif args.device:
     dev = InputDevice("/dev/input/by-id/"+args.device)
@@ -140,7 +144,6 @@ elif args.device:
     dev.grab()
     keebLoop()
 else:
-    dev = InputDevice(config()[0])
     dev.grab()
     writeConfig(1, "default.json")
     keebLoop()
