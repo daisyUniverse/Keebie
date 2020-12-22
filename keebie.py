@@ -15,6 +15,7 @@ def signal_handler(signal, frame):
 
 def config(): # Open the config file and return a list of it's line with leading and trailing spaces striped
     f=open(filePath+"config","r")                                     # Opens config file.
+
     if f.mode =='r':
         config = f.read().splitlines()
         for confLine in range(0, len(config)) : # Strip leading and trailing whitespaces from each line of the config
@@ -56,6 +57,7 @@ def getLayers(): # Lists all the json files in /layers and thier contents
 def addKey(): # Shell for adding new macros
     command = input("Enter the command you would like to attribute to a key on your second keyboard \n")
     print("Please press the key you would like to assign the command to...")
+
     if command.startswith("layer:"):
         if os.path.exists(command.split(':')[-1]+".json") == False:
             createLayer(command.split(':')[-1]+".json")
@@ -64,8 +66,10 @@ def addKey(): # Shell for adding new macros
     for event in dev.read_loop():
         if event.type == ecodes.EV_KEY:
             key = categorize(event)
+
             if key.keystate == key.key_down:
                 inp = input("Assign "+command+" to ["+key.keycode+"]? [Y/n] ")
+
                 if inp == 'Y' or inp == '':
                     newMacro = {}
                     newMacro[key.keycode] = command
@@ -73,7 +77,9 @@ def addKey(): # Shell for adding new macros
                     print(newMacro)
                 else:
                     print("Addition cancelled.")
+
                 rep = input("Would you like to add another Macro? [Y/n] ")
+
                 if rep == 'Y' or rep == '':
                     addKey()
                 else: 
@@ -97,6 +103,7 @@ def createLayer(filename): # Creates a new layer with a given filename
 def readJson(filename): # Reads the file contents of a layer
     with open(layerDir+filename) as f:
         data = json.load(f)
+
     return data 
 
 def keebLoop(): # Reading the keyboard
@@ -119,26 +126,32 @@ def keebLoop(): # Reading the keyboard
                                 writeConfig(1, value.split(':')[-1] + ".json")
                                 print("Switched to layer file: " + value.split(':')[-1] + ".json")
                                 break
+
                         elif value.startswith("script:"):
                             os.system('bash ' + scriptDir + value.split(':')[-1])
                             print("Executing bash script: " + value.split(':')[-1])
                             break
+
                         elif value.startswith("py:"):
                             os.system('python ' + scriptDir + value.split(':')[-1])
                             print("Executing python script: " + value.split(':')[-1])
                             break
+
                         elif value.startswith("py2:"):
                             os.system('python2 ' + scriptDir + value.split(':')[-1])
                             print("Executing python2 script: " + value.split(':')[-1])
                             break
+
                         elif value.startswith("py3:"):
                             os.system('python3 ' + scriptDir + value.split(':')[-1])
                             print("Executing python3 script: " + value.split(':')[-1])
                             break
+                        
                         elif value.startswith("exec:"):
                             os.system(scriptDir + value.split(':')[-1])
                             print("Executing file: " + value.split(':')[-1])
                             break
+                        
                         else:
                             os.system(value)
                             print(keys+": "+value)
@@ -147,19 +160,24 @@ dev = InputDevice(config()[0])
 
 if args.layers:
     getLayers()
+
 elif args.add:
     dev.grab()
     writeConfig(1, "default.json")
     addKey()
+
 elif args.device: # Does not support devices not in /dev/inputs/by-id/
     dev = InputDevice("/dev/input/by-id/"+args.device)
+    
     if os.path.exists(layerDir+args.device+".json") == False:
         createLayer(args.device+".json")
         print("Created layer file: " + layerDir+args.device+".json")
+
     writeConfig(1, args.device+".json")
     print("Switched to layer file: " + args.device+".json")
     dev.grab()
     keebLoop()
+
 else:
     dev.grab()
     writeConfig(1, "default.json")
