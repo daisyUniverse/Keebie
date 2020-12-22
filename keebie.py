@@ -9,7 +9,6 @@ import json
 import argparse
 
 filePath = os.path.abspath(os.path.dirname(sys.argv[0])) + "/" # Get the absolute path to the directory of this script for use when opening files
-print(filePath)
 
 def signal_handler(signal, frame):
     sys.exit(0)
