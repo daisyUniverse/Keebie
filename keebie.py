@@ -13,7 +13,7 @@ filePath = os.path.abspath(os.path.dirname(sys.argv[0])) + "/" # Get the absolut
 def signal_handler(signal, frame):
     sys.exit(0)
 
-def config():
+def config(): # Open the config file and return a list of it's line with leading and trailing spaces striped
     f=open(filePath+"config","r")                                     # Opens config file.
     if f.mode =='r':
         config = f.read().splitlines()
@@ -21,7 +21,7 @@ def config():
             config[confLine] = config[confLine].strip() 
         return config
 
-def writeConfig(lineNum, data):
+def writeConfig(lineNum, data): # Writes some data to a line of the config file
     lines = open(filePath+'config', 'r').readlines()
     lines[lineNum] = data
     out = open(filePath+'config', 'w')
@@ -32,15 +32,15 @@ parser = argparse.ArgumentParser()
 parser.add_argument("--layers", help="Show saved layer files", action="store_true")
 parser.add_argument("--device", help="Change target device")
 parser.add_argument("--add", help="Add new keys", action="store_true")
-
 args = parser.parse_args()
+
 layerDir = filePath + "/layers/"
 scriptDir = filePath + "/scripts/"
 
 
 print("Welcome to Keebie")
 
-def getLayers(): # Lists all the json files in /layers
+def getLayers(): # Lists all the json files in /layers and thier contents
     print("Available Layers: \n")
     layerFt = ".json"
     layerFi = {}
@@ -53,7 +53,7 @@ def getLayers(): # Lists all the json files in /layers
     for i in layerFi:
         print(i+layerFi[i])
 
-def addKey(): # shell for adding new macros
+def addKey(): # Shell for adding new macros
     command = input("Enter the command you would like to attribute to a key on your second keyboard \n")
     print("Please press the key you would like to assign the command to...")
     if command.startswith("layer:"):
@@ -88,18 +88,18 @@ def writeJson(filename, data): # Appends new data to a specified layer
     with open(layerDir+filename, 'w+') as outfile:
         json.dump(prevData, outfile, indent=3)
 
-def createLayer(filename):
+def createLayer(filename): # Creates a new layer with a given filename
     basedata = {"KEY_ESC": "layer:default"}
 
     with open(layerDir+filename, 'w+') as outfile:
         json.dump(basedata, outfile, indent=3)
 
-def readJson(filename): # reads the file contents of a layer
+def readJson(filename): # Reads the file contents of a layer
     with open(layerDir+filename) as f:
         data = json.load(f)
     return data 
 
-def keebLoop(): # reading the keyboard
+def keebLoop(): # Reading the keyboard
     signal.signal(signal.SIGINT, signal_handler)
     for event in dev.read_loop():
         if event.type == ecodes.EV_KEY:
