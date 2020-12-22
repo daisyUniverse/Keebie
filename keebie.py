@@ -1,3 +1,4 @@
+#!/bin/python3
 #Keebie by Elisha Shaddock UwU
 
 from evdev import InputDevice, categorize, ecodes
@@ -7,19 +8,24 @@ import os
 import json
 import argparse
 
+filePath = os.path.abspath(os.path.dirname(sys.argv[0])) + "/" # Get the absolute path to the directory of this script for use when opening files
+print(filePath)
+
 def signal_handler(signal, frame):
     sys.exit(0)
 
 def config():
-    f=open("config","r")                                     # Opens config file.
+    f=open(filePath+"config","r")                                     # Opens config file.
     if f.mode =='r':
         config = f.read().splitlines()
+        for confLine in range(0, len(config)) : # Strip leading and trailing whitespaces from each line of the config
+            config[confLine] = config[confLine].strip() 
         return config
 
 def writeConfig(lineNum, data):
-    lines = open('config', 'r').readlines()
+    lines = open(filePath+'config', 'r').readlines()
     lines[lineNum] = data
-    out = open('config', 'w')
+    out = open(filePath+'config', 'w')
     out.writelines(lines)
     out.close()
 
@@ -29,8 +35,8 @@ parser.add_argument("--device", help="Change target device")
 parser.add_argument("--add", help="Add new keys", action="store_true")
 
 args = parser.parse_args()
-layerDir = os.getcwd() + "/layers/"
-scriptDir = os.getcwd() + "/scripts/"
+layerDir = filePath + "/layers/"
+scriptDir = filePath + "/scripts/"
 
 
 print("Welcome to Keebie")
@@ -122,6 +128,18 @@ def keebLoop(): # reading the keyboard
                             os.system('python ' + scriptDir + value.split(':')[-1])
                             print("Executing python script: " + value.split(':')[-1])
                             break
+                        elif value.startswith("py2:"):
+                            os.system('python2 ' + scriptDir + value.split(':')[-1])
+                            print("Executing python2 script: " + value.split(':')[-1])
+                            break
+                        elif value.startswith("py3:"):
+                            os.system('python3 ' + scriptDir + value.split(':')[-1])
+                            print("Executing python3 script: " + value.split(':')[-1])
+                            break
+                        elif value.startswith("exec:"):
+                            os.system(scriptDir + value.split(':')[-1])
+                            print("Executing file: " + value.split(':')[-1])
+                            break
                         else:
                             os.system(value)
                             print(keys+": "+value)
@@ -134,7 +152,7 @@ elif args.add:
     dev.grab()
     writeConfig(1, "default.json")
     addKey()
-elif args.device:
+elif args.device: # Does not support devices not in /dev/inputs/by-id/
     dev = InputDevice("/dev/input/by-id/"+args.device)
     if os.path.exists(layerDir+args.device+".json") == False:
         createLayer(args.device+".json")
