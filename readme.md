@@ -52,7 +52,7 @@ Just dump the files anywhere and run `keebie.py` and if everything it up and run
 
 
 
-`--list`: Lists all layer files and all of their contents
+`--layers`: Lists all layer files and all of their contents
 
 `-h` or `--help`: Shows a short help message
 
