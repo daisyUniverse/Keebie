@@ -115,7 +115,7 @@ def keebLoop(): # Reading the keyboard
             if key.keystate == key.key_down:
                 keycode = key.keycode
 
-                if keycode in readJson(config()[1]) :
+                if keycode in readJson(config()[1]):
                     value = readJson(config()[1])[keycode]
 
                     if value.startswith("layer:"):
@@ -124,36 +124,29 @@ def keebLoop(): # Reading the keyboard
                             print("Created layer file: " + value.split(':')[-1]+".json")
                             writeConfig(1, value.split(':')[-1] + ".json")
                             print("Switched to layer file: " + value.split(':')[-1] + ".json")
-                            break
                         else:
                             writeConfig(1, value.split(':')[-1] + ".json")
                             print("Switched to layer file: " + value.split(':')[-1] + ".json")
-                            break
 
                     elif value.startswith("script:"):
                         os.system('bash ' + scriptDir + value.split(':')[-1])
                         print("Executing bash script: " + value.split(':')[-1])
-                        break
 
                     elif value.startswith("py:"):
                         os.system('python ' + scriptDir + value.split(':')[-1])
                         print("Executing python script: " + value.split(':')[-1])
-                        break
 
                     elif value.startswith("py2:"):
                         os.system('python2 ' + scriptDir + value.split(':')[-1])
                         print("Executing python2 script: " + value.split(':')[-1])
-                        break
 
                     elif value.startswith("py3:"):
                         os.system('python3 ' + scriptDir + value.split(':')[-1])
                         print("Executing python3 script: " + value.split(':')[-1])
-                        break
                     
                     elif value.startswith("exec:"):
                         os.system(scriptDir + value.split(':')[-1])
                         print("Executing file: " + value.split(':')[-1])
-                        break
                     
                     else:
                         os.system(value)
