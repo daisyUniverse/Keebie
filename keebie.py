@@ -10,6 +10,39 @@ import argparse
 
 filePath = os.path.abspath(os.path.dirname(sys.argv[0])) + "/" # Get the absolute path to the directory of this script for use when opening files
 
+class keyLedger():
+    """A class for finding all keys pressed at any time."""
+    def __init__(self):
+        self.keyList = {} # A list of names of keys being held as strings
+    
+    def update(self, keyEvent):
+        """Take an event and and updates the list of held keys accordingly."""
+
+    def getList(self, returnType = 0):
+        """Returns the list of held keys in different forms based on returnType.
+        
+        returnType values :
+        0 - Returns the list as it is stored, as a list of strings.
+        1 - Returns a single string with keycodes separated by \"+\"s, for use when reading/writing a layer json file.        
+        """
+        if returnType == 0:
+            return self.keyList
+
+        elif returnType == 1:
+            keyListParsed = ""
+            
+            for keycode in self.keyList:
+                keyListParsed += keycode
+                
+                if not keycode is self.keyList[-1]:
+                    keyListParsed += "+"
+
+            return keyListParsed
+
+        else:
+            print(f"Unrecognized value for returnType: {returnType}, returning None, expect errors!")
+            return None
+
 def signal_handler(signal, frame):
     sys.exit(0)
 
