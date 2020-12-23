@@ -110,51 +110,54 @@ def keebLoop(): # Reading the keyboard
     signal.signal(signal.SIGINT, signal_handler)
     for event in dev.read_loop():
         if event.type == ecodes.EV_KEY:
+            
             key = categorize(event)
             if key.keystate == key.key_down:
-                for keys in readJson(config()[1]):
-                    value = readJson(config()[1])[keys]
-                    if key.keycode == keys:
-                        if value.startswith("layer:"):
-                            if os.path.exists(layerDir+value.split(':')[-1] + ".json") == False:
-                                createLayer(value.split(':')[-1]+".json")
-                                print("Created layer file: " + value.split(':')[-1]+".json")
-                                writeConfig(1, value.split(':')[-1] + ".json")
-                                print("Switched to layer file: " + value.split(':')[-1] + ".json")
-                                break
-                            else:
-                                writeConfig(1, value.split(':')[-1] + ".json")
-                                print("Switched to layer file: " + value.split(':')[-1] + ".json")
-                                break
+                keycode = key.keycode
 
-                        elif value.startswith("script:"):
-                            os.system('bash ' + scriptDir + value.split(':')[-1])
-                            print("Executing bash script: " + value.split(':')[-1])
-                            break
+                if keycode in readJson(config()[1]) :
+                    value = readJson(config()[1])[keycode]
 
-                        elif value.startswith("py:"):
-                            os.system('python ' + scriptDir + value.split(':')[-1])
-                            print("Executing python script: " + value.split(':')[-1])
+                    if value.startswith("layer:"):
+                        if os.path.exists(layerDir+value.split(':')[-1] + ".json") == False:
+                            createLayer(value.split(':')[-1]+".json")
+                            print("Created layer file: " + value.split(':')[-1]+".json")
+                            writeConfig(1, value.split(':')[-1] + ".json")
+                            print("Switched to layer file: " + value.split(':')[-1] + ".json")
                             break
-
-                        elif value.startswith("py2:"):
-                            os.system('python2 ' + scriptDir + value.split(':')[-1])
-                            print("Executing python2 script: " + value.split(':')[-1])
-                            break
-
-                        elif value.startswith("py3:"):
-                            os.system('python3 ' + scriptDir + value.split(':')[-1])
-                            print("Executing python3 script: " + value.split(':')[-1])
-                            break
-                        
-                        elif value.startswith("exec:"):
-                            os.system(scriptDir + value.split(':')[-1])
-                            print("Executing file: " + value.split(':')[-1])
-                            break
-                        
                         else:
-                            os.system(value)
-                            print(keys+": "+value)
+                            writeConfig(1, value.split(':')[-1] + ".json")
+                            print("Switched to layer file: " + value.split(':')[-1] + ".json")
+                            break
+
+                    elif value.startswith("script:"):
+                        os.system('bash ' + scriptDir + value.split(':')[-1])
+                        print("Executing bash script: " + value.split(':')[-1])
+                        break
+
+                    elif value.startswith("py:"):
+                        os.system('python ' + scriptDir + value.split(':')[-1])
+                        print("Executing python script: " + value.split(':')[-1])
+                        break
+
+                    elif value.startswith("py2:"):
+                        os.system('python2 ' + scriptDir + value.split(':')[-1])
+                        print("Executing python2 script: " + value.split(':')[-1])
+                        break
+
+                    elif value.startswith("py3:"):
+                        os.system('python3 ' + scriptDir + value.split(':')[-1])
+                        print("Executing python3 script: " + value.split(':')[-1])
+                        break
+                    
+                    elif value.startswith("exec:"):
+                        os.system(scriptDir + value.split(':')[-1])
+                        print("Executing file: " + value.split(':')[-1])
+                        break
+                    
+                    else:
+                        os.system(value)
+                        print(keycode+": "+value)
 
 dev = InputDevice(config()[0])
 
