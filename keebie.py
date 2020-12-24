@@ -11,6 +11,18 @@ import time
 
 filePath = os.path.abspath(os.path.dirname(sys.argv[0])) + "/" # Get the absolute path to the directory of this script for use when opening files
 
+settings = { # A dict of settings to be used across the script
+    "multiKeyMode": "combination",
+    "forceBackground": False,
+    "backgroundInversion": False
+}
+
+settingsPossible = { # A dict of lists of valid values for each setting
+    "multiKeyMode": ["combination", "sequence"],
+    "forceBackground": [True, False],
+    "backgroundInversion": [True, False]
+}
+
 class keyLedger():
     """A class for finding all keys pressed at any time."""
     def __init__(self):
@@ -136,7 +148,7 @@ def config(): # Open the config file and return a list of it's line with leading
 
 def writeConfig(lineNum, data): # Writes some data to a line of the config file
     lines = open(filePath+'config', 'r').readlines()
-    lines[lineNum] = data
+    lines[lineNum] = data.strip() + "\n" # Ensure the data we are write will not interfere later lines
     out = open(filePath+'config', 'w')
     out.writelines(lines)
     out.close()
@@ -221,11 +233,25 @@ def createLayer(filename): # Creates a new layer with a given filename
     with open(layerDir+filename, 'w+') as outfile:
         json.dump(basedata, outfile, indent=3)
 
-def readJson(filename): # Reads the file contents of a layer
-    with open(layerDir+filename) as f:
+def readJson(filename, dir = layerDir): # Reads the file contents of a layer (or any json file named filename in the directory dir)
+    with open(dir+filename) as f:
         data = json.load(f)
 
     return data 
+
+def getSettings(): # Reads the json file specified on the third line of config and sets the values of settings based on it's contents
+    print(f"Loading settings from {config()[2]}") # Notify the user we are getting settings and tell them the file we are using to do so
+
+    settingsFile = readJson(config()[2], filePath) # Get a dict of the keys and values in our settings file
+    for setting in settings.keys(): # For every setting in our settings file
+        if settingsFile[setting] in settingsPossible[setting]: # If the value in our settings file is valid
+            # print(f"Found valid value: \"{settingsFile[setting]}\" for setting: \"{setting}\"")
+            settings[setting] = settingsFile[setting] # write it into our settins
+
+        else :
+            print(f"Value: \"{settingsFile[setting]}\" for setting: \"{setting}\" is invalid, defaulting to {settings[setting]}") # Warn the user of invalid settings in the settings file
+            
+    print(f"Settings are {settings}") # Tell the user the settings we ended up with
 
 def processKeycode(keycode): # Given a keycode that might be in the layer json file, check if it is and execut the appropriate commands
     if keycode in readJson(config()[1]): # If the keycode is in our layer's json file
@@ -274,11 +300,13 @@ def keebLoop(): # Reading the keyboard
 
 device = InputDevice(config()[0]) # Get a reference to the keyboard on the first line of our config file
 
+getSettings() # Get settings from the json file in config
+
 if args.layers: # If the user passed --layers
     getLayers() # show the user all layer json files and thier contents
 
 elif args.add: # If the user passed --add
-    device.grab() # Ensure only we recive input from the board
+    device.grab() # Ensure only we receive input from the board
     writeConfig(1, "default.json") # Ensure we are on the default layer
     addKey() # Launch the key addition shell
 
@@ -291,10 +319,10 @@ elif args.device: # If the user passed --device
 
     writeConfig(1, args.device+".json") # Switch to the specified board's layer json file
     print("Switched to layer file: " + args.device+".json") # Notify the user
-    device.grab() # Ensure only we recive input from the board
+    device.grab() # Ensure only we receive input from the board
     keebLoop() # Begin Reading the keybaord for macros
 
 else: # If the user passed nothing
-    device.grab() # Ensure only we recive input from the board
+    device.grab() # Ensure only we receive input from the board
     writeConfig(1, "default.json") # Ensure we are on the default layer
     keebLoop() # Begin Reading the keybaord for macros
