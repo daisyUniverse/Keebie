@@ -31,11 +31,13 @@ And that should have you up and ready to roll. If when you run the script, you g
 
 Just dump the files anywhere and run `keebie.py` and if everything it up and running, you should be good to go. Test your second keyboard by pressing spacebar which is bound to a test message by default. To run with more keyboards, run the script again with the `--device <dev-id>` option for however many devices you want to add. 
 
+
+
 #### Options:
 
-`--device <device-id>` Launches the script attatched to specified device, creating a new layer file specifically for it if it doesnt already exist. Press ESC to return to default layer.
+`--device <device-id>` Launches the script attatched to specified device, creating a new layer file specifically for it if it doesn't already exist. Press ESC to return to default layer.
 
- `--add`: Launches into the script addition shell. Instructions should be pretty straightforward. Any commands entered will be launched, and if you try to bind the same key twice, your new value will overwrite the old one. There is some special syntax that can be used in this entry that will allow for special functions:
+`--add`: Launches into the script addition shell to add a command to the default layer. Instructions should be pretty straightforward. Any commands entered will be launched when the key(s) you enter are pressed, and if you try to bind the same key twice your new value will overwrite the old one. There is some special syntax that can be used in this entry that will allow for special functions:
 
 - `layer:<layername>`: Will create a layer file in  `/layers/`, and let you bind switching to it to any key
   - ( this will create a layer with a default layout of only having `ESC` return you to the default layer, you can add to it by launching the script, switching to it, then running `python keebie.py -a` again )
@@ -49,8 +51,6 @@ Just dump the files anywhere and run `keebie.py` and if everything it up and run
   - ( same as `python3 ~/whereveryourfolderis/scripts/pythonscript.py (options)` )
 - `exec:<executablefile (options)>`: Will launch `< executablefile.py (options) >` from `/scripts/` 
   - ( same as `~/whereveryourfolderis/scripts/executablefile (options)` )
-
-
 
 `--layers`: Lists all layer files and all of their contents
 
