@@ -54,6 +54,10 @@ class keyLedger():
                 else:
                     print(f"Untracked key {keycode} released.") # If you see this that means we missed a key press, bad news. (But not to fatal.)
 
+            if settings["multiKeyMode"] == "combination":
+                self.keysList.sort()
+                self.newKeysList.sort()
+
             if not self.newKeysList == []: # If new keys have pressed
                 self.freshKeysList = self.keysList # Set fresh keys equal to helf keys
                 # print(f"New keys are: {self.newKeysList}") # Print debug info
@@ -263,11 +267,21 @@ def processKeycode(keycode): # Given a keycode that might be in the layer json f
                 print("Created layer file: " + value.split(':')[-1]+".json") # Notify the user
                 writeConfig(1, value.split(':')[-1] + ".json") # Switch to our new layer file
                 print("Switched to layer file: " + value.split(':')[-1] + ".json") # Notify the user
+                
             else:
                 writeConfig(1, value.split(':')[-1] + ".json") # Switch the layer's json into our config
                 print("Switched to layer file: " + value.split(':')[-1] + ".json") # Notify the user
 
-        elif value.startswith("script:"): # If value is a bash file
+        if value.strip().endswith("&") == False and settings["forceBackground"]: # If value is not set in run in the background and our settings say to force running in the background
+            value += " &" # Force running in the 
+            
+        if value.strip().endswith("&") == False and settings["backgroundInversion"]: # If value is not set to run in the background and our settings say to invert background mode
+            value += " &" # Force running in the 
+        
+        elif value.strip().endswith("&") and settings["backgroundInversion"]: # Else if value is set to run in the background and our settings say to invert background mode
+            value = value.rstrip(" &") # Remove all spaces and &s from the end of value, there might be a better way but this is the best I've got
+
+        if value.startswith("script:"): # If value is a bash file
             print("Executing bash script: " + value.split(':')[-1])
             os.system('bash ' + scriptDir + value.split(':')[-1])
 
@@ -294,8 +308,10 @@ def processKeycode(keycode): # Given a keycode that might be in the layer json f
 def keebLoop(): # Reading the keyboard
     signal.signal(signal.SIGINT, signal_handler)
     ledger = keyLedger() # Reset the keyLedger
+
     for event in device.read_loop(): # Start infinitely geting events from our keyboard
         ledger.update(event) # Update the keyLedger with those events
+
         processKeycode(ledger.getFresh(1)) # Check if ledger.freshKeysList matches a command in our layer's json file
 
 device = InputDevice(config()[0]) # Get a reference to the keyboard on the first line of our config file
