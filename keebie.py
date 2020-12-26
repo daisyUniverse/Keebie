@@ -161,6 +161,7 @@ parser = argparse.ArgumentParser() # Set up command line arguments
 parser.add_argument("--layers", help="Show saved layer files", action="store_true")
 parser.add_argument("--device", help="Change target device")
 parser.add_argument("--add", help="Add new keys", action="store_true")
+parser.add_argument("--settings", help="Edits settings file", action="store_true")
 args = parser.parse_args()
 
 layerDir = filePath + "/layers/" # Cache the full path to the /layers directory
@@ -222,13 +223,13 @@ def addKey(keycodeTimeout = 1): # Shell for adding new macros
     else:
         exit()
 
-def writeJson(filename, data): # Appends new data to a specified layer
-    with open(layerDir+filename) as f:
+def writeJson(filename, data, dir = layerDir): # Appends new data to a specified layer (or any json file named filename in the directory dir)
+    with open(dir+filename) as f:
         prevData = json.load(f)
 
     prevData.update(data)
 
-    with open(layerDir+filename, 'w+') as outfile:
+    with open(dir+filename, 'w+') as outfile:
         json.dump(prevData, outfile, indent=3)
 
 def createLayer(filename): # Creates a new layer with a given filename
@@ -247,7 +248,7 @@ def getSettings(): # Reads the json file specified on the third line of config a
     print(f"Loading settings from {config()[2]}") # Notify the user we are getting settings and tell them the file we are using to do so
 
     settingsFile = readJson(config()[2], filePath) # Get a dict of the keys and values in our settings file
-    for setting in settings.keys(): # For every setting in our settings file
+    for setting in settings.keys(): # For every setting we expect to be in our settings file
         if settingsFile[setting] in settingsPossible[setting]: # If the value in our settings file is valid
             # print(f"Found valid value: \"{settingsFile[setting]}\" for setting: \"{setting}\"")
             settings[setting] = settingsFile[setting] # write it into our settins
@@ -255,7 +256,68 @@ def getSettings(): # Reads the json file specified on the third line of config a
         else :
             print(f"Value: \"{settingsFile[setting]}\" for setting: \"{setting}\" is invalid, defaulting to {settings[setting]}") # Warn the user of invalid settings in the settings file
             
-    print(f"Settings are {settings}") # Tell the user the settings we ended up with
+    # print(f"Settings are {settings}") # Tell the user the settings we ended up with
+
+def editSettings(): # Shell for editing settings
+    settingsFile = readJson(config()[2], filePath) # Get a dict of the keys and values in our settings file
+    
+    settingsList = []
+    for setting in settings.items(): # For every key-value pair in our settings dict
+        settingsList += [setting, ]
+
+    print("Choose what value you would like to edit.")
+    for settingIndex in range(0, len(settingsList)):
+        print(f"-{settingIndex + 1}: {settingsList[settingIndex][0]}   [{settingsList[settingIndex][1]}]")
+    
+    selection = input("Please make you selection: ")
+    try:
+        intSelection = int(selection)
+        if intSelection in range(1, len(settingsList) + 1):
+            settingSelected = settingsList[int(selection) - 1][0]
+            print(f"Editing item \"{settingSelected}\"")
+        
+        else:
+            print("Input out of range, exiting...")
+            exit()
+
+    except ValueError:
+        print("Exiting...")
+        exit()
+
+    print(f"Choose one of {settingSelected}\'s possible values.")
+    for valueIndex in range(0, len(settingsPossible[settingSelected])):
+        print(f"-{valueIndex + 1}: {settingsPossible[settingSelected][valueIndex]}", end = "")
+        if settingsPossible[settingSelected][valueIndex] == settings[settingSelected]:
+            print("   [current]")
+
+        else:
+            print()
+
+    selection = input("Please make you selection: ")
+    try:
+        intSelection = int(selection)
+        if intSelection in range(1, len(settingsPossible[settingSelected]) + 1):
+            valueSelected = settingsPossible[settingSelected][int(selection) - 1]
+            writeJson(config()[2], {settingSelected: valueSelected}, filePath)
+            print(f"Set \"{settingSelected}\" to \"{valueSelected}\"")
+        
+        else:
+            print("Input out of range, exiting...")
+            exit()
+
+    except ValueError:
+        print("Exiting...")
+        exit()
+
+    getSettings()
+
+    rep = input("Would you like to change another setting? [Y/n] ") # Offer the user to edit another setting
+
+    if rep == 'Y' or rep == '': # If they say yes
+        editSettings() # Restart the shell
+
+    else:
+        exit()
 
 def processKeycode(keycode): # Given a keycode that might be in the layer json file, check if it is and execut the appropriate commands
     if keycode in readJson(config()[1]): # If the keycode is in our layer's json file
@@ -267,7 +329,7 @@ def processKeycode(keycode): # Given a keycode that might be in the layer json f
                 print("Created layer file: " + value.split(':')[-1]+".json") # Notify the user
                 writeConfig(1, value.split(':')[-1] + ".json") # Switch to our new layer file
                 print("Switched to layer file: " + value.split(':')[-1] + ".json") # Notify the user
-                
+
             else:
                 writeConfig(1, value.split(':')[-1] + ".json") # Switch the layer's json into our config
                 print("Switched to layer file: " + value.split(':')[-1] + ".json") # Notify the user
@@ -337,6 +399,9 @@ elif args.device: # If the user passed --device
     print("Switched to layer file: " + args.device+".json") # Notify the user
     device.grab() # Ensure only we receive input from the board
     keebLoop() # Begin Reading the keybaord for macros
+
+elif args.settings: # If the user passed --settings
+    editSettings()
 
 else: # If the user passed nothing
     device.grab() # Ensure only we receive input from the board
