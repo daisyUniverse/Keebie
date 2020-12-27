@@ -54,6 +54,18 @@ Just dump the files anywhere and run `keebie.py` and if everything it up and run
 
 `--layers`: Lists all layer files and all of their contents
 
+`--settings`: Launches into the settings editing shell to change your settings. The setting you can change, and their values, are:
+
+- `multiKeyMode`: How multiple held keys are handled. Please note that bindings created with either setting won't always work (or work the same) when using the other setting.
+  - `combination`: Multiple held keys are treated the same regardless of the order the were pressed in. This is the default and is in line with how most other programs work.
+  - `sequence`: The order in which key were pressed (and held!) is considered and allows for distinct bindings on the same set of keys based on the order they were pressed.
+- `forceBackground`: Whether commands should be forced to run in the background.
+  - `True`: Forces commands to run in the background by appending an `&` to the command.
+  - `False`: Does not affect commands. This is the default.
+- `backgroundInversion`: Whether to invert background commands to non-background commands and vice-versa. This setting is processed after `forceBackground`, this means that if both are set to `True` all commands will be forced not to run in the background.
+  - `True`: Inverts whether a command runs in the background by removing `&`s from the end of a command or, if no `&` is pressent, adding appending an `&` to the command.
+  - `False`: Does not affect commands. This is the default.
+
 `-h` or `--help`: Shows a short help message
 
 

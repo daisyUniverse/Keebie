@@ -261,55 +261,57 @@ def getSettings(): # Reads the json file specified on the third line of config a
 def editSettings(): # Shell for editing settings
     settingsFile = readJson(config()[2], filePath) # Get a dict of the keys and values in our settings file
     
-    settingsList = []
+    settingsList = [] # Create a list for key-value pairs of settings 
     for setting in settings.items(): # For every key-value pair in our settings dict
-        settingsList += [setting, ]
+        settingsList += [setting, ] # Add the pair to our list of seting pairs
 
-    print("Choose what value you would like to edit.")
-    for settingIndex in range(0, len(settingsList)):
-        print(f"-{settingIndex + 1}: {settingsList[settingIndex][0]}   [{settingsList[settingIndex][1]}]")
+    print("Choose what value you would like to edit.") # Ask the user to choose which setting they wish to edit
+    for settingIndex in range(0, len(settingsList)): # For the index number of every setting pair in our list of setting pairs
+        print(f"-{settingIndex + 1}: {settingsList[settingIndex][0]}   [{settingsList[settingIndex][1]}]") # Print an entry for every setting, as well as a number associated with it and it's current value
     
-    selection = input("Please make you selection: ")
-    try:
-        intSelection = int(selection)
-        if intSelection in range(1, len(settingsList) + 1):
-            settingSelected = settingsList[int(selection) - 1][0]
-            print(f"Editing item \"{settingSelected}\"")
+    selection = input("Please make you selection: ") # Take the users input as to which setting they wish to edit
+    
+    try: # Try to...
+        intSelection= int(selection) # Comvert the users input from str to int
+        if intSelection in range(1, len(settingsList) + 1): # If the users input corresponds to a listed setting
+            settingSelected = settingsList[int(selection) - 1][0] # Store the selected setting's name
+            print(f"Editing item \"{settingSelected}\"") # Tell the user we are thier selection
         
+        else: # If the users input does not correspond to a listed setting
+            print("Input out of range, exiting...") # Tell the user we are exiting
+            exit() # And do so
+
+    except ValueError: # If the conversion to int fails
+        print("Exiting...") # Tell the user we are exiting
+        exit() # And do so
+
+    print(f"Choose one of {settingSelected}\'s possible values.") # Ask the user to choose which value they want to assign to their selected setting
+    for valueIndex in range(0, len(settingsPossible[settingSelected])): # For the index number of every valid value of the users selected setting
+        print(f"-{valueIndex + 1}: {settingsPossible[settingSelected][valueIndex]}", end = "") # Print an entry for every valid value, as well as a number associate, with no newline
+        if settingsPossible[settingSelected][valueIndex] == settings[settingSelected]: # If a value is the current value of the selected setting
+            print("   [current]") # Tell the user and add a newline
+
         else:
-            print("Input out of range, exiting...")
-            exit()
+            print() # Add a newline
 
-    except ValueError:
-        print("Exiting...")
-        exit()
+    selection = input("Please make you selection: ") # Take the users input as to which value they want to assign to their selected setting
 
-    print(f"Choose one of {settingSelected}\'s possible values.")
-    for valueIndex in range(0, len(settingsPossible[settingSelected])):
-        print(f"-{valueIndex + 1}: {settingsPossible[settingSelected][valueIndex]}", end = "")
-        if settingsPossible[settingSelected][valueIndex] == settings[settingSelected]:
-            print("   [current]")
-
-        else:
-            print()
-
-    selection = input("Please make you selection: ")
-    try:
-        intSelection = int(selection)
-        if intSelection in range(1, len(settingsPossible[settingSelected]) + 1):
-            valueSelected = settingsPossible[settingSelected][int(selection) - 1]
-            writeJson(config()[2], {settingSelected: valueSelected}, filePath)
-            print(f"Set \"{settingSelected}\" to \"{valueSelected}\"")
+    try: # Try to...
+        intSelection = int(selection) # Comvert the users input from str to int
+        if intSelection in range(1, len(settingsPossible[settingSelected]) + 1): # If the users input corresponds to a listed value
+            valueSelected = settingsPossible[settingSelected][int(selection) - 1] # Store the selected value
+            writeJson(config()[2], {settingSelected: valueSelected}, filePath) # Write it into our settings json file
+            print(f"Set \"{settingSelected}\" to \"{valueSelected}\"") # And tell the user we have done so
         
-        else:
-            print("Input out of range, exiting...")
-            exit()
+        else: # If the users input does not correspond to a listed value
+            print("Input out of range, exiting...") # Tell the user we are exiting
+            exit() # And do so
 
-    except ValueError:
-        print("Exiting...")
-        exit()
+    except ValueError: # If the conversion to int fails
+        print("Exiting...") # Tell the user we are exiting
+        exit() # And do so
 
-    getSettings()
+    getSettings() # Refresh the settings in our settings dict with the newly changed setting
 
     rep = input("Would you like to change another setting? [Y/n] ") # Offer the user to edit another setting
 
