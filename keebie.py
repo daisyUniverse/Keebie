@@ -321,7 +321,7 @@ def editSettings(): # Shell for editing settings
     else:
         exit()
 
-def processKeycode(keycode): # Given a keycode that might be in the layer json file, check if it is and execut the appropriate commands
+def processKeycode(keycode): # Given a keycode that might be in the layer json file, check if it is and execute the appropriate commands
     if keycode in readJson(config()[1]): # If the keycode is in our layer's json file
         value = readJson(config()[1])[keycode] # Get the instructions associated with the keycode
 
@@ -403,7 +403,7 @@ elif args.device: # If the user passed --device
     keebLoop() # Begin Reading the keybaord for macros
 
 elif args.settings: # If the user passed --settings
-    editSettings()
+    editSettings() # Launch the setting editing shell
 
 else: # If the user passed nothing
     device.grab() # Ensure only we receive input from the board
