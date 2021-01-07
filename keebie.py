@@ -31,7 +31,7 @@ class keyLedger():
         self.freshKeysList = [] # A list of keycodes of keys being held as strings that is empty unless a new key was pressed when update() was last run
     
     def update(self, keyEvent):
-        """Take an event and and updates the list of held keys accordingly."""
+        """Take an event and and updates the lists of keys accordingly."""
         self.newKeysList = [] # They are no longer new
         self.freshKeysList = [] # They are no longer fresh
 
@@ -129,7 +129,7 @@ class keyLedger():
             for keycode in self.freshKeysList:
                 keyListParsed += keycode # Build the string out of keycodes
                 
-                if not keycode is self.freshKeysList[-1]:
+                if not keycode is self.freshKeysList[-1]: # If this isn't the last keycode
                     keyListParsed += "+" # Add a + to separate it from the previous keycode
 
             return keyListParsed # Return the parsed string 
@@ -142,7 +142,7 @@ def signal_handler(signal, frame):
     sys.exit(0)
 
 def config(): # Open the config file and return a list of it's line with leading and trailing spaces striped
-    f=open(filePath+"config","r")                                     # Opens config file.
+    f=open(filePath+"config","r") # Opens config file.
 
     if f.mode =='r':
         config = f.read().splitlines()
@@ -177,7 +177,7 @@ def getLayers(): # Lists all the json files in /layers and thier contents
 
     for f in layers:
         with open(os.path.join(layerDir,f)) as file_object:
-            layerFi[f] = file_object.read() # build a list of the files at those paths
+            layerFi[f] = file_object.read() # Build a list of the files at those paths
     
     for i in layerFi:
         print(i+layerFi[i]) # And display thier contents to the user
@@ -251,7 +251,7 @@ def getSettings(): # Reads the json file specified on the third line of config a
     for setting in settings.keys(): # For every setting we expect to be in our settings file
         if settingsFile[setting] in settingsPossible[setting]: # If the value in our settings file is valid
             # print(f"Found valid value: \"{settingsFile[setting]}\" for setting: \"{setting}\"")
-            settings[setting] = settingsFile[setting] # write it into our settins
+            settings[setting] = settingsFile[setting] # Write it into our settins
 
         else :
             print(f"Value: \"{settingsFile[setting]}\" for setting: \"{setting}\" is invalid, defaulting to {settings[setting]}") # Warn the user of invalid settings in the settings file
@@ -297,7 +297,7 @@ def editSettings(): # Shell for editing settings
     selection = input("Please make you selection: ") # Take the users input as to which value they want to assign to their selected setting
 
     try: # Try to...
-        intSelection = int(selection) # Comvert the users input from str to int
+        intSelection = int(selection) # Convert the users input from str to int
         if intSelection in range(1, len(settingsPossible[settingSelected]) + 1): # If the users input corresponds to a listed value
             valueSelected = settingsPossible[settingSelected][int(selection) - 1] # Store the selected value
             writeJson(config()[2], {settingSelected: valueSelected}, filePath) # Write it into our settings json file
@@ -337,10 +337,10 @@ def processKeycode(keycode): # Given a keycode that might be in the layer json f
                 print("Switched to layer file: " + value.split(':')[-1] + ".json") # Notify the user
 
         if value.strip().endswith("&") == False and settings["forceBackground"]: # If value is not set in run in the background and our settings say to force running in the background
-            value += " &" # Force running in the 
+            value += " &" # Force running in the background
             
         if value.strip().endswith("&") == False and settings["backgroundInversion"]: # If value is not set to run in the background and our settings say to invert background mode
-            value += " &" # Force running in the 
+            value += " &" # Force running in the background
         
         elif value.strip().endswith("&") and settings["backgroundInversion"]: # Else if value is set to run in the background and our settings say to invert background mode
             value = value.rstrip(" &") # Remove all spaces and &s from the end of value, there might be a better way but this is the best I've got
@@ -383,7 +383,7 @@ device = InputDevice(config()[0]) # Get a reference to the keyboard on the first
 getSettings() # Get settings from the json file in config
 
 if args.layers: # If the user passed --layers
-    getLayers() # show the user all layer json files and thier contents
+    getLayers() # Show the user all layer json files and their contents
 
 elif args.add: # If the user passed --add
     device.grab() # Ensure only we receive input from the board
@@ -400,7 +400,7 @@ elif args.device: # If the user passed --device
     writeConfig(1, args.device+".json") # Switch to the specified board's layer json file
     print("Switched to layer file: " + args.device+".json") # Notify the user
     device.grab() # Ensure only we receive input from the board
-    keebLoop() # Begin Reading the keybaord for macros
+    keebLoop() # Begin Reading the keyboard for macros
 
 elif args.settings: # If the user passed --settings
     editSettings() # Launch the setting editing shell
@@ -408,4 +408,4 @@ elif args.settings: # If the user passed --settings
 else: # If the user passed nothing
     device.grab() # Ensure only we receive input from the board
     writeConfig(1, "default.json") # Ensure we are on the default layer
-    keebLoop() # Begin Reading the keybaord for macros
+    keebLoop() # Begin Reading the keyboard for macros
