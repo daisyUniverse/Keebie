@@ -391,7 +391,7 @@ elif args.add: # If the user passed --add
     addKey() # Launch the key addition shell
 
 elif args.device: # If the user passed --device
-    device = InputDevice("/device/input/by-id/"+args.device) # Get a reference to the specified keyboard
+    device = InputDevice("/dev/input/by-id/"+args.device) # Get a reference to the specified keyboard
     
     if os.path.exists(layerDir+args.device+".json") == False: # If the keyboard doesn't yet have a layer json file
         createLayer(args.device+".json") # Create one
