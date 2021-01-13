@@ -11,6 +11,18 @@ import time
 
 filePath = os.path.abspath(os.path.dirname(sys.argv[0])) + "/" # Get the absolute path to the directory of this script for use when opening files
 
+settings = { # A dict of settings to be used across the script
+    "multiKeyMode": "combination",
+    "forceBackground": False,
+    "backgroundInversion": False
+}
+
+settingsPossible = { # A dict of lists of valid values for each setting
+    "multiKeyMode": ["combination", "sequence"],
+    "forceBackground": [True, False],
+    "backgroundInversion": [True, False]
+}
+
 class keyLedger():
     """A class for finding all keys pressed at any time."""
     def __init__(self):
@@ -19,7 +31,7 @@ class keyLedger():
         self.freshKeysList = [] # A list of keycodes of keys being held as strings that is empty unless a new key was pressed when update() was last run
     
     def update(self, keyEvent):
-        """Take an event and and updates the list of held keys accordingly."""
+        """Take an event and and updates the lists of keys accordingly."""
         self.newKeysList = [] # They are no longer new
         self.freshKeysList = [] # They are no longer fresh
 
@@ -41,6 +53,10 @@ class keyLedger():
 
                 else:
                     print(f"Untracked key {keycode} released.") # If you see this that means we missed a key press, bad news. (But not to fatal.)
+
+            if settings["multiKeyMode"] == "combination":
+                self.keysList.sort()
+                self.newKeysList.sort()
 
             if not self.newKeysList == []: # If new keys have pressed
                 self.freshKeysList = self.keysList # Set fresh keys equal to helf keys
@@ -113,7 +129,7 @@ class keyLedger():
             for keycode in self.freshKeysList:
                 keyListParsed += keycode # Build the string out of keycodes
                 
-                if not keycode is self.freshKeysList[-1]:
+                if not keycode is self.freshKeysList[-1]: # If this isn't the last keycode
                     keyListParsed += "+" # Add a + to separate it from the previous keycode
 
             return keyListParsed # Return the parsed string 
@@ -126,7 +142,7 @@ def signal_handler(signal, frame):
     sys.exit(0)
 
 def config(): # Open the config file and return a list of it's line with leading and trailing spaces striped
-    f=open(filePath+"config","r")                                     # Opens config file.
+    f=open(filePath+"config","r") # Opens config file.
 
     if f.mode =='r':
         config = f.read().splitlines()
@@ -136,7 +152,7 @@ def config(): # Open the config file and return a list of it's line with leading
 
 def writeConfig(lineNum, data): # Writes some data to a line of the config file
     lines = open(filePath+'config', 'r').readlines()
-    lines[lineNum] = data
+    lines[lineNum] = data.strip() + "\n" # Ensure the data we are write will not interfere later lines
     out = open(filePath+'config', 'w')
     out.writelines(lines)
     out.close()
@@ -145,6 +161,7 @@ parser = argparse.ArgumentParser() # Set up command line arguments
 parser.add_argument("--layers", help="Show saved layer files", action="store_true")
 parser.add_argument("--device", help="Change target device")
 parser.add_argument("--add", help="Add new keys", action="store_true")
+parser.add_argument("--settings", help="Edits settings file", action="store_true")
 args = parser.parse_args()
 
 layerDir = filePath + "/layers/" # Cache the full path to the /layers directory
@@ -160,7 +177,7 @@ def getLayers(): # Lists all the json files in /layers and thier contents
 
     for f in layers:
         with open(os.path.join(layerDir,f)) as file_object:
-            layerFi[f] = file_object.read() # build a list of the files at those paths
+            layerFi[f] = file_object.read() # Build a list of the files at those paths
     
     for i in layerFi:
         print(i+layerFi[i]) # And display thier contents to the user
@@ -206,13 +223,13 @@ def addKey(keycodeTimeout = 1): # Shell for adding new macros
     else:
         exit()
 
-def writeJson(filename, data): # Appends new data to a specified layer
-    with open(layerDir+filename) as f:
+def writeJson(filename, data, dir = layerDir): # Appends new data to a specified layer (or any json file named filename in the directory dir)
+    with open(dir+filename) as f:
         prevData = json.load(f)
 
     prevData.update(data)
 
-    with open(layerDir+filename, 'w+') as outfile:
+    with open(dir+filename, 'w+') as outfile:
         json.dump(prevData, outfile, indent=3)
 
 def createLayer(filename): # Creates a new layer with a given filename
@@ -221,13 +238,90 @@ def createLayer(filename): # Creates a new layer with a given filename
     with open(layerDir+filename, 'w+') as outfile:
         json.dump(basedata, outfile, indent=3)
 
-def readJson(filename): # Reads the file contents of a layer
-    with open(layerDir+filename) as f:
+def readJson(filename, dir = layerDir): # Reads the file contents of a layer (or any json file named filename in the directory dir)
+    with open(dir+filename) as f:
         data = json.load(f)
 
     return data 
 
-def processKeycode(keycode): # Given a keycode that might be in the layer json file, check if it is and execut the appropriate commands
+def getSettings(): # Reads the json file specified on the third line of config and sets the values of settings based on it's contents
+    print(f"Loading settings from {config()[2]}") # Notify the user we are getting settings and tell them the file we are using to do so
+
+    settingsFile = readJson(config()[2], filePath) # Get a dict of the keys and values in our settings file
+    for setting in settings.keys(): # For every setting we expect to be in our settings file
+        if settingsFile[setting] in settingsPossible[setting]: # If the value in our settings file is valid
+            # print(f"Found valid value: \"{settingsFile[setting]}\" for setting: \"{setting}\"")
+            settings[setting] = settingsFile[setting] # Write it into our settins
+
+        else :
+            print(f"Value: \"{settingsFile[setting]}\" for setting: \"{setting}\" is invalid, defaulting to {settings[setting]}") # Warn the user of invalid settings in the settings file
+            
+    # print(f"Settings are {settings}") # Tell the user the settings we ended up with
+
+def editSettings(): # Shell for editing settings
+    settingsFile = readJson(config()[2], filePath) # Get a dict of the keys and values in our settings file
+    
+    settingsList = [] # Create a list for key-value pairs of settings 
+    for setting in settings.items(): # For every key-value pair in our settings dict
+        settingsList += [setting, ] # Add the pair to our list of seting pairs
+
+    print("Choose what value you would like to edit.") # Ask the user to choose which setting they wish to edit
+    for settingIndex in range(0, len(settingsList)): # For the index number of every setting pair in our list of setting pairs
+        print(f"-{settingIndex + 1}: {settingsList[settingIndex][0]}   [{settingsList[settingIndex][1]}]") # Print an entry for every setting, as well as a number associated with it and it's current value
+    
+    selection = input("Please make you selection: ") # Take the users input as to which setting they wish to edit
+    
+    try: # Try to...
+        intSelection= int(selection) # Comvert the users input from str to int
+        if intSelection in range(1, len(settingsList) + 1): # If the users input corresponds to a listed setting
+            settingSelected = settingsList[int(selection) - 1][0] # Store the selected setting's name
+            print(f"Editing item \"{settingSelected}\"") # Tell the user we are thier selection
+        
+        else: # If the users input does not correspond to a listed setting
+            print("Input out of range, exiting...") # Tell the user we are exiting
+            exit() # And do so
+
+    except ValueError: # If the conversion to int fails
+        print("Exiting...") # Tell the user we are exiting
+        exit() # And do so
+
+    print(f"Choose one of {settingSelected}\'s possible values.") # Ask the user to choose which value they want to assign to their selected setting
+    for valueIndex in range(0, len(settingsPossible[settingSelected])): # For the index number of every valid value of the users selected setting
+        print(f"-{valueIndex + 1}: {settingsPossible[settingSelected][valueIndex]}", end = "") # Print an entry for every valid value, as well as a number associate, with no newline
+        if settingsPossible[settingSelected][valueIndex] == settings[settingSelected]: # If a value is the current value of the selected setting
+            print("   [current]") # Tell the user and add a newline
+
+        else:
+            print() # Add a newline
+
+    selection = input("Please make you selection: ") # Take the users input as to which value they want to assign to their selected setting
+
+    try: # Try to...
+        intSelection = int(selection) # Convert the users input from str to int
+        if intSelection in range(1, len(settingsPossible[settingSelected]) + 1): # If the users input corresponds to a listed value
+            valueSelected = settingsPossible[settingSelected][int(selection) - 1] # Store the selected value
+            writeJson(config()[2], {settingSelected: valueSelected}, filePath) # Write it into our settings json file
+            print(f"Set \"{settingSelected}\" to \"{valueSelected}\"") # And tell the user we have done so
+        
+        else: # If the users input does not correspond to a listed value
+            print("Input out of range, exiting...") # Tell the user we are exiting
+            exit() # And do so
+
+    except ValueError: # If the conversion to int fails
+        print("Exiting...") # Tell the user we are exiting
+        exit() # And do so
+
+    getSettings() # Refresh the settings in our settings dict with the newly changed setting
+
+    rep = input("Would you like to change another setting? [Y/n] ") # Offer the user to edit another setting
+
+    if rep == 'Y' or rep == '': # If they say yes
+        editSettings() # Restart the shell
+
+    else:
+        exit()
+
+def processKeycode(keycode): # Given a keycode that might be in the layer json file, check if it is and execute the appropriate commands
     if keycode in readJson(config()[1]): # If the keycode is in our layer's json file
         value = readJson(config()[1])[keycode] # Get the instructions associated with the keycode
 
@@ -237,11 +331,21 @@ def processKeycode(keycode): # Given a keycode that might be in the layer json f
                 print("Created layer file: " + value.split(':')[-1]+".json") # Notify the user
                 writeConfig(1, value.split(':')[-1] + ".json") # Switch to our new layer file
                 print("Switched to layer file: " + value.split(':')[-1] + ".json") # Notify the user
+
             else:
                 writeConfig(1, value.split(':')[-1] + ".json") # Switch the layer's json into our config
                 print("Switched to layer file: " + value.split(':')[-1] + ".json") # Notify the user
 
-        elif value.startswith("script:"): # If value is a bash file
+        if value.strip().endswith("&") == False and settings["forceBackground"]: # If value is not set in run in the background and our settings say to force running in the background
+            value += " &" # Force running in the background
+            
+        if value.strip().endswith("&") == False and settings["backgroundInversion"]: # If value is not set to run in the background and our settings say to invert background mode
+            value += " &" # Force running in the background
+        
+        elif value.strip().endswith("&") and settings["backgroundInversion"]: # Else if value is set to run in the background and our settings say to invert background mode
+            value = value.rstrip(" &") # Remove all spaces and &s from the end of value, there might be a better way but this is the best I've got
+
+        if value.startswith("script:"): # If value is a bash file
             print("Executing bash script: " + value.split(':')[-1])
             os.system('bash ' + scriptDir + value.split(':')[-1])
 
@@ -268,22 +372,26 @@ def processKeycode(keycode): # Given a keycode that might be in the layer json f
 def keebLoop(): # Reading the keyboard
     signal.signal(signal.SIGINT, signal_handler)
     ledger = keyLedger() # Reset the keyLedger
+
     for event in device.read_loop(): # Start infinitely geting events from our keyboard
         ledger.update(event) # Update the keyLedger with those events
+
         processKeycode(ledger.getFresh(1)) # Check if ledger.freshKeysList matches a command in our layer's json file
 
 device = InputDevice(config()[0]) # Get a reference to the keyboard on the first line of our config file
 
+getSettings() # Get settings from the json file in config
+
 if args.layers: # If the user passed --layers
-    getLayers() # show the user all layer json files and thier contents
+    getLayers() # Show the user all layer json files and their contents
 
 elif args.add: # If the user passed --add
-    device.grab() # Ensure only we recive input from the board
+    device.grab() # Ensure only we receive input from the board
     writeConfig(1, "default.json") # Ensure we are on the default layer
     addKey() # Launch the key addition shell
 
 elif args.device: # If the user passed --device
-    device = InputDevice("/device/input/by-id/"+args.device) # Get a reference to the specified keyboard
+    device = InputDevice("/dev/input/by-id/"+args.device) # Get a reference to the specified keyboard
     
     if os.path.exists(layerDir+args.device+".json") == False: # If the keyboard doesn't yet have a layer json file
         createLayer(args.device+".json") # Create one
@@ -291,10 +399,13 @@ elif args.device: # If the user passed --device
 
     writeConfig(1, args.device+".json") # Switch to the specified board's layer json file
     print("Switched to layer file: " + args.device+".json") # Notify the user
-    device.grab() # Ensure only we recive input from the board
-    keebLoop() # Begin Reading the keybaord for macros
+    device.grab() # Ensure only we receive input from the board
+    keebLoop() # Begin Reading the keyboard for macros
+
+elif args.settings: # If the user passed --settings
+    editSettings() # Launch the setting editing shell
 
 else: # If the user passed nothing
-    device.grab() # Ensure only we recive input from the board
+    device.grab() # Ensure only we receive input from the board
     writeConfig(1, "default.json") # Ensure we are on the default layer
-    keebLoop() # Begin Reading the keybaord for macros
+    keebLoop() # Begin Reading the keyboard for macros
