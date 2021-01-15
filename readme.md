@@ -16,9 +16,9 @@ Okay so this point is still a little bit uh, well. Experimental. I am not very e
 
 - **Find the input file of your target keyboard**
   - You can do this by running `ls /dev/input/by-id/`, and looking for a name that looks like it matches. Test to see if you've found it by running `cat /dev/input/by-id/[the-device-you-think-it-is]`( this will most likely have event and/or kbd in the name ) There will likely be more than one. keep trying that command and pressing buttons on your target keyboard. once your console starts to output garbage when you press buttons on the target keyboard, you've found it. note that down.
-  - If nothing in `/dev/input/by-id/` looks like the keyboard you want (as may happen if, for example, you have a PS/2 keyboard) then try looking in `/dev/input/by-path/` or `/dev/input/` following the same procedure as above, this will require much more trial and error but is functionally the same as using `/dev/input/by-id` as `/dev/input/by-id` and `/dev/input/by-path` are populated by links to files in `/dev/inputs/`.
+  - If nothing in `/dev/input/by-id/` looks like the keyboard you want (as may happen if, for example, you have a PS/2 keyboard) then try looking in `/dev/input/by-path/` or `/dev/input/` following the same procedure as above, this will require much more trial and error but is functionally the same as using `/dev/input/by-id` as `/dev/input/by-id` and `/dev/input/by-path` are populated by links to files in `/dev/input/`.
 - **Give yourself permission to access that device.**
-  - This is that part I wasnt sure about. I suspect that the way I did it was wrong, but I'll give you the way I did it, and the way that seems like the right way but didnt work for me.
+  - This is that part I wasnt sure about. I suspect that the way I did it was wrong, but I'll give you the way I did it, and the way that seems like the right way but didn't work for me.
   - What I ended up doing was `sudo chmod a+r /dev/input/by-id/[my-device-name]`.
   - What is typically done: most inputs should belong to a group ( usually `input`, but check by using `ls -l /dev/input/by-id/[my-device-name]` ), and you should be able to add yourself to whatever group the device belongs to by doing something like `usermod -a -G input yourusername`. In my case the device didn't seem to belong to any group except for root. In other cases even when the file belongs to input and the user is added to input error have still resulted.
 - **Add your device file directory to the first line of the config file**
@@ -45,11 +45,11 @@ Just dump the files anywhere and run `keebie.py` and if everything it up and run
   - ( same as `bash ~/whereveryourfolderis/scripts/scriptname.sh (options)` )
 - `py:<pythonscript.py (options)>`: Will launch `< pythonscript.py (options) >` from `/scripts/` 
   - ( same as `python ~/whereveryourfolderis/scripts/pythonscript.py (options)` )
-- `py2:<pythonscript.py (options)>`: Will launch `< pythonscript.py (options) >` from `/scripts/` 
+- `py2:<pythonscript.py (options)>`: Will launch `< python2script.py (options) >` from `/scripts/` 
   - ( same as `python2 ~/whereveryourfolderis/scripts/pythonscript.py (options)` )
-- `py3:<pythonscript.py (options)>`: Will launch `< pythonscript.py (options) >` from `/scripts/` 
+- `py3:<pythonscript.py (options)>`: Will launch `< python3script.py (options) >` from `/scripts/` 
   - ( same as `python3 ~/whereveryourfolderis/scripts/pythonscript.py (options)` )
-- `exec:<executablefile (options)>`: Will launch `< executablefile.py (options) >` from `/scripts/` 
+- `exec:<executablefile (options)>`: Will launch `< executablefile (options) >` from `/scripts/` 
   - ( same as `~/whereveryourfolderis/scripts/executablefile (options)` )
 
 `--layers`: Lists all layer files and all of their contents.
@@ -74,4 +74,4 @@ Just dump the files anywhere and run `keebie.py` and if everything it up and run
 
 **Multi-script drifting**
 
-​Put an `&` at the end of your commands. This will effectively make any commands you run through it into their own process and keep from any long winded scripts or error messages keeping the rest of your macros from responding. You can also use the `forceBackground` setting to force all commands to run in the their own process, or use the `backgroundinversion` setting to make all commands run in their own process *unless* an `&` in at the end of the command (this is more convenient if you want seprate processes by default).
+​Put an `&` at the end of your commands. This will effectively make any commands you run through it into their own process and keep from any long winded scripts or error messages keeping the rest of your macros from responding. You can also use the `forceBackground` setting to force all commands to run in the their own process, or use the `backgroundInversion` setting to make all commands run in their own process *unless* an `&` in at the end of the command (this is more convenient if you want seprate processes by default).
