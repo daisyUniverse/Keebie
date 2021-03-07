@@ -186,10 +186,10 @@ def getLayers(): # Lists all the json files in /layers and thier contents
 def addKey(key = None, command = None, keycodeTimeout = 1): # Shell for adding new macros
     ledger = keyLedger() # Reset the keyLedger
 
-    if not (key == None and command == None):
-        relaunch = False
-    else:
+    if key == None and command == None:
         relaunch = True
+    else:
+        relaunch = False
     
     if command == None:
         command = input("Enter the command you would like to attribute to a key on your second keyboard \n") # Get the command the user wishs to bind
@@ -346,12 +346,6 @@ def editLayer(layer = "default.json"): # Shell for editing a layer file (default
     keybindingsList = [] # Create a list for key-value pairs of keybindings
     for keybinding in LayerDict.items(): # For every key-value pair in our layers dict
         keybindingsList += [keybinding, ] # Add the pair to our list of seting pairs
-
-    print(layer)
-    # print(LayerDict)
-    print(keybindingsList)
-    # print(LayerDict.items())
-    # exit()
 
     print("Choose what binding you would like to edit.") # Ask the user to choose which keybinding they wish to edit
     for bindingIndex in range(0, len(keybindingsList)): # For the index number of every binding pair in our list of binding pairs

@@ -39,6 +39,8 @@ Just dump the files anywhere and run `keebie.py` and if everything it up and run
 
 `--add`: Launches into the script addition shell to add a command to the default layer. Instructions should be pretty straightforward. Any commands entered will be launched when the key(s) you enter are pressed, and if you try to bind the same key twice your new value will overwrite the old one. There is some special syntax that can be used in this entry that will allow for special functions:
 
+`--edit`: Launches into a shell to delete or edit key bindings.
+
 - `layer:<layername>`: Will create a layer file in  `/layers/`, and let you bind switching to it to any key
   - ( this will create a layer with a default layout of only having `ESC` return you to the default layer, you can add to it by launching the script, switching to it, then running `python keebie.py -a` again )
 - `script:<scriptname.sh (options)>`: Will launch a `< scriptname.sh (options) >` from `/scripts/`
