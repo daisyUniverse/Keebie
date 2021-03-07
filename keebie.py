@@ -162,6 +162,7 @@ parser.add_argument("--layers", help="Show saved layer files", action="store_tru
 parser.add_argument("--device", help="Change target device")
 parser.add_argument("--add", help="Add new keys", action="store_true")
 parser.add_argument("--settings", help="Edits settings file", action="store_true")
+parser.add_argument("--edit", help="Edits specified layer file (or default layer if unspecified)", nargs="?", default=False, const="default.json")
 args = parser.parse_args()
 
 layerDir = filePath + "/layers/" # Cache the full path to the /layers directory
@@ -182,45 +183,54 @@ def getLayers(): # Lists all the json files in /layers and thier contents
     for i in layerFi:
         print(i+layerFi[i]) # And display thier contents to the user
 
-def addKey(keycodeTimeout = 1): # Shell for adding new macros
+def addKey(key = None, command = None, keycodeTimeout = 1): # Shell for adding new macros
     ledger = keyLedger() # Reset the keyLedger
 
-    command = input("Enter the command you would like to attribute to a key on your second keyboard \n") # Get the command the user wishs to bind
+    if not (key == None and command == None):
+        relaunch = False
+    else:
+        relaunch = True
+    
+    if command == None:
+        command = input("Enter the command you would like to attribute to a key on your second keyboard \n") # Get the command the user wishs to bind
 
-    if command.startswith("layer:"): # If the user entered a layer switch command
-        if os.path.exists(command.split(':')[-1]+".json") == False: # Check if the layer json file exsits
-            createLayer(command.split(':')[-1]+".json") # If not create it
-            print("Created layer file: " + command.split(':')[-1]+".json") # And notify the user
+        if command.startswith("layer:"): # If the user entered a layer switch command
+            if os.path.exists(command.split(':')[-1]+".json") == False: # Check if the layer json file exsits
+                createLayer(command.split(':')[-1]+".json") # If not create it
+                print("Created layer file: " + command.split(':')[-1]+".json") # And notify the user
 
-    print(f"Please press the key combination you would like to assign the command to and hold it for {keycodeTimeout} seconds until the next prompt.")
+    if key == None:
+        print(f"Please press the key combination you would like to assign the command to and hold it for {keycodeTimeout} seconds until the next prompt.")
 
-    loopStartTime = None
-    signal.signal(signal.SIGINT, signal_handler)
-    for event in device.read_loop():
-        if loopStartTime == None: # because we don't want to start timing until the user has begun entering there key combiation
-            loopStartTime = time.time()
+        loopStartTime = None
+        signal.signal(signal.SIGINT, signal_handler)
+        for event in device.read_loop():
+            if loopStartTime == None: # because we don't want to start timing until the user has begun entering there key combiation
+                loopStartTime = time.time()
 
-        ledger.update(event) # Keep updateing the keyLedger with every new input
+            ledger.update(event) # Keep updateing the keyLedger with every new input
 
-        if not time.time() - loopStartTime < keycodeTimeout: # Unless the time runs out
-            break # Then we bear the loop
+            if not time.time() - loopStartTime < keycodeTimeout: # Unless the time runs out
+                break # Then we break the loop
+        
+        key = ledger.getList(1)
 
-    inp = input(f"Assign {command} to [{ledger.getList(1)}]? [Y/n] ") # Ask the user if we (and they) got the command and binding right
+    inp = input(f"Assign {command} to [{key}]? [Y/n] ") # Ask the user if we (and they) got the command and binding right
     if inp == 'Y' or inp == '': # If we did 
         newMacro = {}
-        newMacro[ledger.getList(1)] = command
+        newMacro[key] = command
         writeJson(config()[1], newMacro) # Write the binding into our layer json file
         print(newMacro) # And print it back
 
     else: # If we didn't
         print("Addition cancelled.") # Confirm we have cancelled the binding
 
-    rep = input("Would you like to add another Macro? [Y/n] ") # Offer the user to add another binding
+    if relaunch:
+        rep = input("Would you like to add another Macro? [Y/n] ") # Offer the user to add another binding
 
-    if rep == 'Y' or rep == '': # If they say yes
-        addKey() # Restart the shell
+        if rep == 'Y' or rep == '': # If they say yes
+            addKey() # Restart the shell
 
-    else:
         exit()
 
 def writeJson(filename, data, dir = layerDir): # Appends new data to a specified layer (or any json file named filename in the directory dir)
@@ -243,6 +253,15 @@ def readJson(filename, dir = layerDir): # Reads the file contents of a layer (or
         data = json.load(f)
 
     return data 
+
+def popJson(filename, key, dir = layerDir): # Removes the key key and it's value from a layer (or any json file named filename in the directory dir)
+    with open(dir+filename) as f:
+        prevData = json.load(f)
+
+    prevData.pop(key)
+
+    with open(dir+filename, 'w+') as outfile:
+        json.dump(prevData, outfile, indent=3)
 
 def getSettings(): # Reads the json file specified on the third line of config and sets the values of settings based on it's contents
     print(f"Loading settings from {config()[2]}") # Notify the user we are getting settings and tell them the file we are using to do so
@@ -317,6 +336,77 @@ def editSettings(): # Shell for editing settings
 
     if rep == 'Y' or rep == '': # If they say yes
         editSettings() # Restart the shell
+
+    else:
+        exit()
+
+def editLayer(layer = "default.json"): # Shell for editing a layer file (default by default)
+    LayerDict = readJson(layer, layerDir) # Get a dict of keybindings in the layer file
+    
+    keybindingsList = [] # Create a list for key-value pairs of keybindings
+    for keybinding in LayerDict.items(): # For every key-value pair in our layers dict
+        keybindingsList += [keybinding, ] # Add the pair to our list of seting pairs
+
+    print(layer)
+    # print(LayerDict)
+    print(keybindingsList)
+    # print(LayerDict.items())
+    # exit()
+
+    print("Choose what binding you would like to edit.") # Ask the user to choose which keybinding they wish to edit
+    for bindingIndex in range(0, len(keybindingsList)): # For the index number of every binding pair in our list of binding pairs
+        print(f"-{bindingIndex + 1}: {keybindingsList[bindingIndex][0]}   [{keybindingsList[bindingIndex][1]}]") # Print an entry for every binding, as well as a number associated with it and it's current value
+    
+    selection = input("Please make you selection: ") # Take the users input as to which binding they wish to edit
+    
+    try: # Try to...
+        intSelection= int(selection) # Comvert the users input from str to int
+        if intSelection in range(1, len(keybindingsList) + 1): # If the users input corresponds to a listed binding
+            bindingSelected = keybindingsList[int(selection) - 1][0] # Store the selected bindings's key
+            print(f"Editing item \"{bindingSelected}\"") # Tell the user we are editing their selection
+        
+        else: # If the users input does not correspond to a listed binding
+            print("Input out of range, exiting...") # Tell the user we are exiting
+            exit() # And do so
+
+    except ValueError: # If the conversion to int fails
+        print("Exiting...") # Tell the user we are exiting
+        exit() # And do so
+
+    print(f"Choose am action to take on {bindingSelected}.") # Ask the user to choose what they want to do with their selected binding
+    # Prompt the user with a few possible actions
+    print("-1: Delete binding.")
+    print("-2: Edit binding key.")
+    print("-3: Edit binding command.")
+    print("-4: Cancel.")
+
+    selection = input("Please make you selection: ") # Take the users input as to what they want to do with their selected binding
+
+    try: # Try to...
+        intSelection = int(selection) # Convert the users input from str to int
+
+        if intSelection == 1: # If the user selected delete
+            popJson(layer, bindingSelected) # Remove the binding
+        elif intSelection == 2: # If the user selected edit key
+            addKey(command = LayerDict[bindingSelected]) # Launch the key addition shell and preserve the command
+            popJson(layer, bindingSelected) # Note: if the user replaces the original key with the same key this will delete the binding
+        elif intSelection == 3: # If the user selected edit command
+            addKey(key = bindingSelected) # Launch the key addition shell and preserve the key
+        elif intSelection == 4: # If the user selected cancel
+            pass # Pass back to the previous level
+
+        else: # If the users input does not correspond to a listed value
+            print("Input out of range, exiting...") # Tell the user we are exiting
+            exit() # And do so
+
+    except ValueError: # If the conversion to int fails
+        print("Exiting...") # Tell the user we are exiting
+        exit() # And do so
+
+    rep = input("Would you like to edit another binding? [Y/n] ") # Offer the user to edit another binding
+
+    if rep == 'Y' or rep == '': # If they say yes
+        editLayer() # Restart the shell
 
     else:
         exit()
@@ -404,6 +494,10 @@ elif args.device: # If the user passed --device
 
 elif args.settings: # If the user passed --settings
     editSettings() # Launch the setting editing shell
+
+elif args.edit: # If the user passed --edit
+    device.grab() # Ensure only we receive input from the board
+    editLayer(args.edit) # Launch the layer editing shell
 
 else: # If the user passed nothing
     device.grab() # Ensure only we receive input from the board
