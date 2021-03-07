@@ -1,5 +1,5 @@
 #!/bin/python3
-#Keebie by Elisha Shaddock UwU
+#Keebie by Robin Universe & Friends
 
 from evdev import InputDevice, categorize, ecodes
 import sys
