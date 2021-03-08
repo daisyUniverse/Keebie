@@ -199,6 +199,19 @@ def addKey(key = None, command = None, keycodeTimeout = 1): # Shell for adding n
                 createLayer(command.split(':')[-1]+".json") # If not create it
                 print("Created layer file: " + command.split(':')[-1]+".json") # And notify the user
 
+                print("LEDs detected on your keyboard:")
+                for led in device.capabilities(verbose=True)[("EV_LED", 17)]: # For all LEDs on the board
+                    print(f"-{led[1]}: {led[0]}") # List it
+
+                onLeds = input("Please choose what LEDs should be enable on this layer (comma and/or space separated list)") # Prompt the user for a list of LED numbers
+                onLeds = onLeds.replace(",", " ").split() # Split the input list
+
+                onLedsInt = []
+                for led in onLeds: # For all strs in the split list
+                    onLedsInt.append(int(led)) # Cast the str to int and add it to a list
+
+                writeJson(command.split(':')[-1]+".json", {"leds": onLedsInt}) # Write the input list to the layer file
+
     if key == None:
         print(f"Please press the key combination you would like to assign the command to and hold it for {keycodeTimeout} seconds until the next prompt.")
 
@@ -420,6 +433,13 @@ def processKeycode(keycode): # Given a keycode that might be in the layer json f
                 writeConfig(1, value.split(':')[-1] + ".json") # Switch the layer's json into our config
                 print("Switched to layer file: " + value.split(':')[-1] + ".json") # Notify the user
 
+            try:
+                setLeds(readJson(config()[1])["leds"])
+            except KeyError:
+                print(f"Layer {readJson(config()[1])} has no leds property, writing empty")
+                writeJson(config()[1], {"leds": []})
+                setLeds([])
+
         if value.strip().endswith("&") == False and settings["forceBackground"]: # If value is not set in run in the background and our settings say to force running in the background
             value += " &" # Force running in the background
             
@@ -429,7 +449,10 @@ def processKeycode(keycode): # Given a keycode that might be in the layer json f
         elif value.strip().endswith("&") and settings["backgroundInversion"]: # Else if value is set to run in the background and our settings say to invert background mode
             value = value.rstrip(" &") # Remove all spaces and &s from the end of value, there might be a better way but this is the best I've got
 
-        if value.startswith("script:"): # If value is a bash file
+        if value.startswith("layer:"): # If value is a layerswitch command
+            pass
+
+        elif value.startswith("script:"): # If value is a bash file
             print("Executing bash script: " + value.split(':')[-1])
             os.system('bash ' + scriptDir + value.split(':')[-1])
 
@@ -462,7 +485,17 @@ def keebLoop(): # Reading the keyboard
 
         processKeycode(ledger.getFresh(1)) # Check if ledger.freshKeysList matches a command in our layer's json file
 
+def setLeds(onLeds): # Sets the passed LEDs on (and any others off)
+    leds = device.capabilities()[17] # Get a list of LEDs the device has
+
+    for led in leds: # For all LEDs on the board
+        if led in onLeds: # If the LED is to be set on
+            device.set_led(led, 1) # Set it on
+        else:
+            device.set_led(led, 0) # Set it off
+
 device = InputDevice(config()[0]) # Get a reference to the keyboard on the first line of our config file
+setLeds(readJson(config()[1])["leds"]) # Set LEDs based on the default layer
 
 getSettings() # Get settings from the json file in config
 
