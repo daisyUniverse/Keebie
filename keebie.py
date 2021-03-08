@@ -362,7 +362,10 @@ def editLayer(layer = "default.json"): # Shell for editing a layer file (default
 
     print("Choose what binding you would like to edit.") # Ask the user to choose which keybinding they wish to edit
     for bindingIndex in range(0, len(keybindingsList)): # For the index number of every binding pair in our list of binding pairs
-        print(f"-{bindingIndex + 1}: {keybindingsList[bindingIndex][0]}   [{keybindingsList[bindingIndex][1]}]") # Print an entry for every binding, as well as a number associated with it and it's current value
+        if not keybindingsList[bindingIndex][0] == "leds":
+            print(f"-{bindingIndex + 1}: {keybindingsList[bindingIndex][0]}   [{keybindingsList[bindingIndex][1]}]") # Print an entry for every binding, as well as a number associated with it and it's current value
+        else:
+            print(f"-{bindingIndex + 1}: Edit LEDs")
     
     selection = input("Please make you selection: ") # Take the users input as to which binding they wish to edit
     
@@ -380,35 +383,50 @@ def editLayer(layer = "default.json"): # Shell for editing a layer file (default
         print("Exiting...") # Tell the user we are exiting
         exit() # And do so
 
-    print(f"Choose am action to take on {bindingSelected}.") # Ask the user to choose what they want to do with their selected binding
-    # Prompt the user with a few possible actions
-    print("-1: Delete binding.")
-    print("-2: Edit binding key.")
-    print("-3: Edit binding command.")
-    print("-4: Cancel.")
+    if bindingSelected == "leds":
+        print("LEDs detected on your keyboard:")
+        for led in device.capabilities(verbose=True)[("EV_LED", 17)]: # For all LEDs on the board
+            print(f"-{led[1]}: {led[0]}") # List it
 
-    selection = input("Please make you selection: ") # Take the users input as to what they want to do with their selected binding
+        onLeds = input("Please choose what LEDs should be enable on this layer (comma and/or space separated list)") # Prompt the user for a list of LED numbers
+        onLeds = onLeds.replace(",", " ").split() # Split the input list
 
-    try: # Try to...
-        intSelection = int(selection) # Convert the users input from str to int
+        onLedsInt = []
+        for led in onLeds: # For all strs in the split list
+            onLedsInt.append(int(led)) # Cast the str to int and add it to a list
 
-        if intSelection == 1: # If the user selected delete
-            popJson(layer, bindingSelected) # Remove the binding
-        elif intSelection == 2: # If the user selected edit key
-            addKey(command = LayerDict[bindingSelected]) # Launch the key addition shell and preserve the command
-            popJson(layer, bindingSelected) # Note: if the user replaces the original key with the same key this will delete the binding
-        elif intSelection == 3: # If the user selected edit command
-            addKey(key = bindingSelected) # Launch the key addition shell and preserve the key
-        elif intSelection == 4: # If the user selected cancel
-            pass # Pass back to the previous level
+        writeJson(config()[1], {"leds": onLedsInt}) # Write the input list to the layer file
 
-        else: # If the users input does not correspond to a listed value
-            print("Input out of range, exiting...") # Tell the user we are exiting
+    else:
+        print(f"Choose am action to take on {bindingSelected}.") # Ask the user to choose what they want to do with their selected binding
+        # Prompt the user with a few possible actions
+        print("-1: Delete binding.")
+        print("-2: Edit binding key.")
+        print("-3: Edit binding command.")
+        print("-4: Cancel.")
+
+        selection = input("Please make you selection: ") # Take the users input as to what they want to do with their selected binding
+
+        try: # Try to...
+            intSelection = int(selection) # Convert the users input from str to int
+
+            if intSelection == 1: # If the user selected delete
+                popJson(layer, bindingSelected) # Remove the binding
+            elif intSelection == 2: # If the user selected edit key
+                addKey(command = LayerDict[bindingSelected]) # Launch the key addition shell and preserve the command
+                popJson(layer, bindingSelected) # Note: if the user replaces the original key with the same key this will delete the binding
+            elif intSelection == 3: # If the user selected edit command
+                addKey(key = bindingSelected) # Launch the key addition shell and preserve the key
+            elif intSelection == 4: # If the user selected cancel
+                pass # Pass back to the previous level
+
+            else: # If the users input does not correspond to a listed value
+                print("Input out of range, exiting...") # Tell the user we are exiting
+                exit() # And do so
+
+        except ValueError: # If the conversion to int fails
+            print("Exiting...") # Tell the user we are exiting
             exit() # And do so
-
-    except ValueError: # If the conversion to int fails
-        print("Exiting...") # Tell the user we are exiting
-        exit() # And do so
 
     rep = input("Would you like to edit another binding? [Y/n] ") # Offer the user to edit another binding
 
