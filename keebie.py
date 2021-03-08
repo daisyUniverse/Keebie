@@ -199,14 +199,11 @@ def getLayers(): # Lists all the json files in /layers and thier contents
 
 def detectKeyboard(): # Detect what file a keypress is coming from
     print("Please press a key on the desired input device...")
-    time.sleep(.1) # small delay to avoid detecting the device you started the script with
+    time.sleep(.5) # small delay to avoid detecting the device you started the script with
     dev = ""
     while dev == "": # Wait for this command to output the device name, loops every 1s
         dev = subprocess.check_output("inotifywatch /dev/input/by-id/* -t 1 2>&1 | grep /dev/input/by-id/ | awk 'NF{ print $NF }'", shell=True ).decode('utf-8').strip()
-
-    print("\nYour device file is")
-    print(dev)
-    end()
+    return dev
 
 def addKey(key = None, command = None, keycodeTimeout = 1): # Shell for adding new macros
     ledger = keyLedger() # Reset the keyLedger
@@ -487,7 +484,20 @@ def keebLoop(): # Reading the keyboard
 
         processKeycode(ledger.getFresh(1)) # Check if ledger.freshKeysList matches a command in our layer's json file
 
-device = InputDevice(config()[0]) # Get a reference to the keyboard on the first line of our config file
+if config()[0] == "/dev/input/by-id/put-your-device-name-here":
+    print("You have not set your device file in " + filePath + "config")
+    resp = input("Would you like to detect a device by keypress now? [Y/n] ")
+    if resp.lower().startswith("n"):
+        sys.exit(0)
+    else:
+        deviceString = detectKeyboard()
+        print(deviceString)
+        device = InputDevice(deviceString)
+        resp1 = input("Would you like to save this as your default device? [Y/n] ")
+        if resp1.lower().startswith("n") == False:
+            writeConfig(0, deviceString)
+else:  
+    device = InputDevice(config()[0]) # Get a reference to the keyboard on the first line of our config file
 
 getSettings() # Get settings from the json file in config
 
@@ -522,6 +532,7 @@ elif args.edit: # If the user passed --edit
     editLayer(args.edit) # Launch the layer editing shell
 
 else: # If the user passed nothing
+    time.sleep(.5)
     device.grab() # Ensure only we receive input from the board
     writeConfig(1, "default.json") # Ensure we are on the default layer
     keebLoop() # Begin Reading the keyboard for macros
