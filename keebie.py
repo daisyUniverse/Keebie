@@ -178,8 +178,8 @@ parser.add_argument("--settings", help="Edits settings file", action="store_true
 parser.add_argument("--edit", help="Edits specified layer file (or default layer if unspecified)", nargs="?", default=False, const="default.json")
 args = parser.parse_args()
 
-layerDir = filePath + "/layers/" # Cache the full path to the /layers directory
-scriptDir = filePath + "/scripts/" # Cache the full path to the /scripts directory
+layerDir = filePath + "layers/" # Cache the full path to the /layers directory
+scriptDir = filePath + "scripts/" # Cache the full path to the /scripts directory
 
 print("Welcome to Keebie")
 
@@ -484,7 +484,7 @@ def keebLoop(): # Reading the keyboard
 
         processKeycode(ledger.getFresh(1)) # Check if ledger.freshKeysList matches a command in our layer's json file
 
-if config()[0] == "/dev/input/by-id/put-your-device-name-here":
+if config()[0] == "/dev/input/by-id/put-your-device-name-here" and args.device == None:
     print("You have not set your device file in " + filePath + "config")
     resp = input("Would you like to detect a device by keypress now? [Y/n] ")
     if resp.lower().startswith("n"):
@@ -496,7 +496,9 @@ if config()[0] == "/dev/input/by-id/put-your-device-name-here":
         resp1 = input("Would you like to save this as your default device? [Y/n] ")
         if resp1.lower().startswith("n") == False:
             writeConfig(0, deviceString)
-else:  
+elif args.device != None:
+    device = InputDevice("/dev/input/by-id/"+args.device)
+else:
     device = InputDevice(config()[0]) # Get a reference to the keyboard on the first line of our config file
 
 getSettings() # Get settings from the json file in config
@@ -514,7 +516,7 @@ elif args.device: # If the user passed --device
     
     if os.path.exists(layerDir+args.device+".json") == False: # If the keyboard doesn't yet have a layer json file
         createLayer(args.device+".json") # Create one
-        print("Created layer file: " + layerDir+args.device+".json") # And notify the user
+        print("Created layer file: " + layerDir + args.device + ".json") # And notify the user
 
     writeConfig(1, args.device+".json") # Switch to the specified board's layer json file
     print("Switched to layer file: " + args.device+".json") # Notify the user
