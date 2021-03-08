@@ -1,4 +1,4 @@
-#!/bin/python3
+#!/usr/bin/env python3
 #Keebie by Robin Universe & Friends
 
 from evdev import InputDevice, categorize, ecodes
@@ -8,6 +8,7 @@ import os
 import json
 import argparse
 import time
+import subprocess
 
 filePath = os.path.abspath(os.path.dirname(sys.argv[0])) + "/" # Get the absolute path to the directory of this script for use when opening files
 
@@ -139,7 +140,18 @@ class keyLedger():
             return None
 
 def signal_handler(signal, frame):
+    end()
+
+def end(): # Properly close the device file and exit the script
+    close(device)
     sys.exit(0)
+
+def close(self): # try to close the device file gracefully
+    if self.fd > -1:
+        try:
+            os.close(self.fd)
+        finally:
+            self.fd = -1
 
 def config(): # Open the config file and return a list of it's line with leading and trailing spaces striped
     f=open(filePath+"config","r") # Opens config file.
@@ -160,6 +172,7 @@ def writeConfig(lineNum, data): # Writes some data to a line of the config file
 parser = argparse.ArgumentParser() # Set up command line arguments
 parser.add_argument("--layers", help="Show saved layer files", action="store_true")
 parser.add_argument("--device", help="Change target device")
+parser.add_argument("--detect", help="Detect keyboard device file", action="store_true")
 parser.add_argument("--add", help="Add new keys", action="store_true")
 parser.add_argument("--settings", help="Edits settings file", action="store_true")
 parser.add_argument("--edit", help="Edits specified layer file (or default layer if unspecified)", nargs="?", default=False, const="default.json")
@@ -182,6 +195,18 @@ def getLayers(): # Lists all the json files in /layers and thier contents
     
     for i in layerFi:
         print(i+layerFi[i]) # And display thier contents to the user
+    end()
+
+def detectKeyboard(): # Detect what file a keypress is coming from
+    print("Please press a key on the desired input device...")
+    time.sleep(.1) # small delay to avoid detecting the device you started the script with
+    dev = ""
+    while dev == "": # Wait for this command to output the device name, loops every 1s
+        dev = subprocess.check_output("inotifywatch /dev/input/by-id/* -t 1 2>&1 | grep /dev/input/by-id/ | awk 'NF{ print $NF }'", shell=True ).decode('utf-8').strip()
+
+    print("\nYour device file is")
+    print(dev)
+    end()
 
 def addKey(key = None, command = None, keycodeTimeout = 1): # Shell for adding new macros
     ledger = keyLedger() # Reset the keyLedger
@@ -231,7 +256,7 @@ def addKey(key = None, command = None, keycodeTimeout = 1): # Shell for adding n
         if rep == 'Y' or rep == '': # If they say yes
             addKey() # Restart the shell
 
-        exit()
+        end()
 
 def writeJson(filename, data, dir = layerDir): # Appends new data to a specified layer (or any json file named filename in the directory dir)
     with open(dir+filename) as f:
@@ -298,11 +323,11 @@ def editSettings(): # Shell for editing settings
         
         else: # If the users input does not correspond to a listed setting
             print("Input out of range, exiting...") # Tell the user we are exiting
-            exit() # And do so
+            end() # And do so
 
     except ValueError: # If the conversion to int fails
         print("Exiting...") # Tell the user we are exiting
-        exit() # And do so
+        end() # And do so
 
     print(f"Choose one of {settingSelected}\'s possible values.") # Ask the user to choose which value they want to assign to their selected setting
     for valueIndex in range(0, len(settingsPossible[settingSelected])): # For the index number of every valid value of the users selected setting
@@ -324,11 +349,11 @@ def editSettings(): # Shell for editing settings
         
         else: # If the users input does not correspond to a listed value
             print("Input out of range, exiting...") # Tell the user we are exiting
-            exit() # And do so
+            end() # And do so
 
     except ValueError: # If the conversion to int fails
         print("Exiting...") # Tell the user we are exiting
-        exit() # And do so
+        end() # And do so
 
     getSettings() # Refresh the settings in our settings dict with the newly changed setting
 
@@ -338,7 +363,7 @@ def editSettings(): # Shell for editing settings
         editSettings() # Restart the shell
 
     else:
-        exit()
+        end()
 
 def editLayer(layer = "default.json"): # Shell for editing a layer file (default by default)
     LayerDict = readJson(layer, layerDir) # Get a dict of keybindings in the layer file
@@ -361,11 +386,11 @@ def editLayer(layer = "default.json"): # Shell for editing a layer file (default
         
         else: # If the users input does not correspond to a listed binding
             print("Input out of range, exiting...") # Tell the user we are exiting
-            exit() # And do so
+            end() # And do so
 
     except ValueError: # If the conversion to int fails
         print("Exiting...") # Tell the user we are exiting
-        exit() # And do so
+        end() # And do so
 
     print(f"Choose am action to take on {bindingSelected}.") # Ask the user to choose what they want to do with their selected binding
     # Prompt the user with a few possible actions
@@ -391,11 +416,11 @@ def editLayer(layer = "default.json"): # Shell for editing a layer file (default
 
         else: # If the users input does not correspond to a listed value
             print("Input out of range, exiting...") # Tell the user we are exiting
-            exit() # And do so
+            end() # And do so
 
     except ValueError: # If the conversion to int fails
         print("Exiting...") # Tell the user we are exiting
-        exit() # And do so
+        end() # And do so
 
     rep = input("Would you like to edit another binding? [Y/n] ") # Offer the user to edit another binding
 
@@ -403,7 +428,7 @@ def editLayer(layer = "default.json"): # Shell for editing a layer file (default
         editLayer() # Restart the shell
 
     else:
-        exit()
+        end()
 
 def processKeycode(keycode): # Given a keycode that might be in the layer json file, check if it is and execute the appropriate commands
     if keycode in readJson(config()[1]): # If the keycode is in our layer's json file
@@ -488,6 +513,9 @@ elif args.device: # If the user passed --device
 
 elif args.settings: # If the user passed --settings
     editSettings() # Launch the setting editing shell
+
+elif args.detect: # If the user passed --detect
+    detectKeyboard() # Launch the keyboard detection function
 
 elif args.edit: # If the user passed --edit
     device.grab() # Ensure only we receive input from the board
