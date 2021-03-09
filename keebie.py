@@ -169,17 +169,17 @@ def writeConfig(lineNum, data): # Writes some data to a line of the config file
     out.writelines(lines)
     out.close()
 
+layerDir = filePath + "layers/" # Cache the full path to the /layers directory
+scriptDir = filePath + "scripts/" # Cache the full path to the /scripts directory
+
 parser = argparse.ArgumentParser() # Set up command line arguments
 parser.add_argument("--layers", help="Show saved layer files", action="store_true")
 parser.add_argument("--device", help="Change target device")
 parser.add_argument("--detect", help="Detect keyboard device file", action="store_true")
 parser.add_argument("--add", help="Add new keys", action="store_true")
 parser.add_argument("--settings", help="Edits settings file", action="store_true")
-parser.add_argument("--edit", help="Edits specified layer file (or default layer if unspecified)", nargs="?", default=False, const="default.json")
+parser.add_argument("--edit", help="Edits specified layer file (or default layer if unspecified)", nargs="?", default=False, const="default.json", metavar="layer", choices=[i for i in os.listdir(layerDir) if os.path.splitext(i)[1] == ".json"])
 args = parser.parse_args()
-
-layerDir = filePath + "layers/" # Cache the full path to the /layers directory
-scriptDir = filePath + "scripts/" # Cache the full path to the /scripts directory
 
 print("Welcome to Keebie")
 
@@ -220,6 +220,19 @@ def addKey(key = None, command = None, keycodeTimeout = 1): # Shell for adding n
             if os.path.exists(command.split(':')[-1]+".json") == False: # Check if the layer json file exsits
                 createLayer(command.split(':')[-1]+".json") # If not create it
                 print("Created layer file: " + command.split(':')[-1]+".json") # And notify the user
+
+                print("LEDs detected on your keyboard:")
+                for led in device.capabilities(verbose=True)[("EV_LED", 17)]: # For all LEDs on the board
+                    print(f"-{led[1]}: {led[0]}") # List it
+
+                onLeds = input("Please choose what LEDs should be enable on this layer (comma and/or space separated list)") # Prompt the user for a list of LED numbers
+                onLeds = onLeds.replace(",", " ").split() # Split the input list
+
+                onLedsInt = []
+                for led in onLeds: # For all strs in the split list
+                    onLedsInt.append(int(led)) # Cast the str to int and add it to a list
+
+                writeJson(command.split(':')[-1]+".json", {"leds": onLedsInt}) # Write the input list to the layer file
 
     if key == None:
         print(f"Please press the key combination you would like to assign the command to and hold it for {keycodeTimeout} seconds until the next prompt.")
@@ -371,7 +384,10 @@ def editLayer(layer = "default.json"): # Shell for editing a layer file (default
 
     print("Choose what binding you would like to edit.") # Ask the user to choose which keybinding they wish to edit
     for bindingIndex in range(0, len(keybindingsList)): # For the index number of every binding pair in our list of binding pairs
-        print(f"-{bindingIndex + 1}: {keybindingsList[bindingIndex][0]}   [{keybindingsList[bindingIndex][1]}]") # Print an entry for every binding, as well as a number associated with it and it's current value
+        if not keybindingsList[bindingIndex][0] == "leds":
+            print(f"-{bindingIndex + 1}: {keybindingsList[bindingIndex][0]}   [{keybindingsList[bindingIndex][1]}]") # Print an entry for every binding, as well as a number associated with it and it's current value
+        else:
+            print(f"-{bindingIndex + 1}: Edit LEDs")
     
     selection = input("Please make you selection: ") # Take the users input as to which binding they wish to edit
     
@@ -389,35 +405,50 @@ def editLayer(layer = "default.json"): # Shell for editing a layer file (default
         print("Exiting...") # Tell the user we are exiting
         end() # And do so
 
-    print(f"Choose am action to take on {bindingSelected}.") # Ask the user to choose what they want to do with their selected binding
-    # Prompt the user with a few possible actions
-    print("-1: Delete binding.")
-    print("-2: Edit binding key.")
-    print("-3: Edit binding command.")
-    print("-4: Cancel.")
+    if bindingSelected == "leds":
+        print("LEDs detected on your keyboard:")
+        for led in device.capabilities(verbose=True)[("EV_LED", 17)]: # For all LEDs on the board
+            print(f"-{led[1]}: {led[0]}") # List it
 
-    selection = input("Please make you selection: ") # Take the users input as to what they want to do with their selected binding
+        onLeds = input("Please choose what LEDs should be enable on this layer (comma and/or space separated list)") # Prompt the user for a list of LED numbers
+        onLeds = onLeds.replace(",", " ").split() # Split the input list
 
-    try: # Try to...
-        intSelection = int(selection) # Convert the users input from str to int
+        onLedsInt = []
+        for led in onLeds: # For all strs in the split list
+            onLedsInt.append(int(led)) # Cast the str to int and add it to a list
 
-        if intSelection == 1: # If the user selected delete
-            popJson(layer, bindingSelected) # Remove the binding
-        elif intSelection == 2: # If the user selected edit key
-            addKey(command = LayerDict[bindingSelected]) # Launch the key addition shell and preserve the command
-            popJson(layer, bindingSelected) # Note: if the user replaces the original key with the same key this will delete the binding
-        elif intSelection == 3: # If the user selected edit command
-            addKey(key = bindingSelected) # Launch the key addition shell and preserve the key
-        elif intSelection == 4: # If the user selected cancel
-            pass # Pass back to the previous level
+        writeJson(config()[1], {"leds": onLedsInt}) # Write the input list to the layer file
 
-        else: # If the users input does not correspond to a listed value
-            print("Input out of range, exiting...") # Tell the user we are exiting
+    else:
+        print(f"Choose am action to take on {bindingSelected}.") # Ask the user to choose what they want to do with their selected binding
+        # Prompt the user with a few possible actions
+        print("-1: Delete binding.")
+        print("-2: Edit binding key.")
+        print("-3: Edit binding command.")
+        print("-4: Cancel.")
+
+        selection = input("Please make you selection: ") # Take the users input as to what they want to do with their selected binding
+
+        try: # Try to...
+            intSelection = int(selection) # Convert the users input from str to int
+
+            if intSelection == 1: # If the user selected delete
+                popJson(layer, bindingSelected) # Remove the binding
+            elif intSelection == 2: # If the user selected edit key
+                addKey(command = LayerDict[bindingSelected]) # Launch the key addition shell and preserve the command
+                popJson(layer, bindingSelected) # Note: if the user replaces the original key with the same key this will delete the binding
+            elif intSelection == 3: # If the user selected edit command
+                addKey(key = bindingSelected) # Launch the key addition shell and preserve the key
+            elif intSelection == 4: # If the user selected cancel
+                pass # Pass back to the previous level
+
+            else: # If the users input does not correspond to a listed value
+                print("Input out of range, exiting...") # Tell the user we are exiting
+                end() # And do so
+
+        except ValueError: # If the conversion to int fails
+            print("Exiting...") # Tell the user we are exiting
             end() # And do so
-
-    except ValueError: # If the conversion to int fails
-        print("Exiting...") # Tell the user we are exiting
-        end() # And do so
 
     rep = input("Would you like to edit another binding? [Y/n] ") # Offer the user to edit another binding
 
@@ -442,6 +473,13 @@ def processKeycode(keycode): # Given a keycode that might be in the layer json f
                 writeConfig(1, value.split(':')[-1] + ".json") # Switch the layer's json into our config
                 print("Switched to layer file: " + value.split(':')[-1] + ".json") # Notify the user
 
+            try:
+                setLeds(readJson(config()[1])["leds"])
+            except KeyError:
+                print(f"Layer {readJson(config()[1])} has no leds property, writing empty")
+                writeJson(config()[1], {"leds": []})
+                setLeds([])
+
         if value.strip().endswith("&") == False and settings["forceBackground"]: # If value is not set in run in the background and our settings say to force running in the background
             value += " &" # Force running in the background
             
@@ -451,7 +489,10 @@ def processKeycode(keycode): # Given a keycode that might be in the layer json f
         elif value.strip().endswith("&") and settings["backgroundInversion"]: # Else if value is set to run in the background and our settings say to invert background mode
             value = value.rstrip(" &") # Remove all spaces and &s from the end of value, there might be a better way but this is the best I've got
 
-        if value.startswith("script:"): # If value is a bash file
+        if value.startswith("layer:"): # If value is a layerswitch command
+            pass
+
+        elif value.startswith("script:"): # If value is a bash file
             print("Executing bash script: " + value.split(':')[-1])
             os.system('bash ' + scriptDir + value.split(':')[-1])
 
@@ -484,6 +525,15 @@ def keebLoop(): # Reading the keyboard
 
         processKeycode(ledger.getFresh(1)) # Check if ledger.freshKeysList matches a command in our layer's json file
 
+def setLeds(onLeds): # Sets the passed LEDs on (and any others off)
+    leds = device.capabilities()[17] # Get a list of LEDs the device has
+
+    for led in leds: # For all LEDs on the board
+        if led in onLeds: # If the LED is to be set on
+            device.set_led(led, 1) # Set it on
+        else:
+            device.set_led(led, 0) # Set it off
+
 if config()[0] == "/dev/input/by-id/put-your-device-name-here" and args.device == None:
     print("You have not set your device file in " + filePath + "config")
     resp = input("Would you like to detect a device by keypress now? [Y/n] ")
@@ -500,6 +550,8 @@ elif args.device != None:
     device = InputDevice("/dev/input/by-id/"+args.device)
 else:
     device = InputDevice(config()[0]) # Get a reference to the keyboard on the first line of our config file
+
+setLeds(readJson(config()[1])["leds"]) # Set LEDs based on the default layer
 
 getSettings() # Get settings from the json file in config
 
