@@ -169,17 +169,17 @@ def writeConfig(lineNum, data): # Writes some data to a line of the config file
     out.writelines(lines)
     out.close()
 
+layerDir = filePath + "layers/" # Cache the full path to the /layers directory
+scriptDir = filePath + "scripts/" # Cache the full path to the /scripts directory
+
 parser = argparse.ArgumentParser() # Set up command line arguments
 parser.add_argument("--layers", help="Show saved layer files", action="store_true")
 parser.add_argument("--device", help="Change target device")
 parser.add_argument("--detect", help="Detect keyboard device file", action="store_true")
 parser.add_argument("--add", help="Add new keys", action="store_true")
 parser.add_argument("--settings", help="Edits settings file", action="store_true")
-parser.add_argument("--edit", help="Edits specified layer file (or default layer if unspecified)", nargs="?", default=False, const="default.json")
+parser.add_argument("--edit", help="Edits specified layer file (or default layer if unspecified)", nargs="?", default=False, const="default.json", metavar="layer", choices=[i for i in os.listdir(layerDir) if os.path.splitext(i)[1] == ".json"])
 args = parser.parse_args()
-
-layerDir = filePath + "layers/" # Cache the full path to the /layers directory
-scriptDir = filePath + "scripts/" # Cache the full path to the /scripts directory
 
 print("Welcome to Keebie")
 
