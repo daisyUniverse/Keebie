@@ -43,17 +43,17 @@ class keyLedger():
 
             if keystate == keyEvent.key_down or keystate == keyEvent.key_hold: # If a new key has been pressed or a key we might have missed the down event for is being held
                 if not keycode in self.keysList: # If this key (which is held) is not in our list of keys that are held
-                    # print(f"New key tracked: {keycode}")
+                    print(f"New key tracked: {keycode}")
                     self.keysList += [keycode, ] # Add list of our (one) keycode to list of held keys
                     self.newKeysList += [keycode, ] # and to our list of newly held keys
 
             elif keystate == keyEvent.key_up: # If a key has been released
                 if keycode in self.keysList: # And if we have that key marked as held
-                    # print(f"Tracked key {keycode} released.")
+                    print(f"Tracked key {keycode} released.")
                     self.keysList.remove(keycode) # Then we remove it from our list of held keys
 
                 else:
-                    print(f"Untracked key {keycode} released.") # If you see this that means we missed a key press, bad news. (But not to fatal.)
+                    print(f"Untracked key {keycode} released.") # If you see this that means we missed a key press, bad news. (But not fatal.)
 
             if settings["multiKeyMode"] == "combination":
                 self.keysList.sort()
@@ -61,8 +61,8 @@ class keyLedger():
 
             if not self.newKeysList == []: # If new keys have pressed
                 self.freshKeysList = self.keysList # Set fresh keys equal to helf keys
-                # print(f"New keys are: {self.newKeysList}") # Print debug info
-                # print(f"Fresh keys are: {self.freshKeysList}")
+                print(f"New keys are: {self.newKeysList}") # Print debug info
+                print(f"Fresh keys are: {self.freshKeysList}")
 
     def getList(self, returnType = 0):
         """Returns the list of held keys in different forms based on returnType.
@@ -239,15 +239,28 @@ def addKey(key = None, command = None, keycodeTimeout = 1): # Shell for adding n
 
         loopStartTime = None
         signal.signal(signal.SIGINT, signal_handler)
-        for event in device.read_loop():
-            if loopStartTime == None: # because we don't want to start timing until the user has begun entering there key combiation
-                loopStartTime = time.time()
 
-            ledger.update(event) # Keep updateing the keyLedger with every new input
+        try: # Try to...
+            for event in device.read(): # For any backlogged events from the board
+                ledger.update(event) # process it
 
-            if not time.time() - loopStartTime < keycodeTimeout: # Unless the time runs out
-                break # Then we break the loop
-        
+        except BlockingIOError: # If no events are currently available
+            pass
+
+        while True: # Start an endless loop
+            try: # Try to...
+                for event in device.read(): # For all event currently available
+                    if loopStartTime == None: # If we havn't started timing yet (i.e. if the user hasn't pressed any keys yet)
+                        loopStartTime = time.time() # Start timing
+
+                    ledger.update(event) # Keep updating the keyLedger with every new input
+            
+            except BlockingIOError: # If no events are currently available
+                pass
+
+            if not loopStartTime == None and not time.time() - loopStartTime < keycodeTimeout: # Unless the time runs out
+                break # Then we break the loop    
+
         key = ledger.getList(1)
 
     inp = input(f"Assign {command} to [{key}]? [Y/n] ") # Ask the user if we (and they) got the command and binding right
