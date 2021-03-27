@@ -19,7 +19,7 @@ Okay so this point is still a little bit uh, well. Experimental. I am not very e
   - If nothing in `/dev/input/by-id/` looks like the keyboard you want (as may happen if, for example, you have a PS/2 keyboard) then try looking in `/dev/input/by-path/` or `/dev/input/` following the same procedure as above, this will require much more trial and error but is functionally the same as using `/dev/input/by-id` as `/dev/input/by-id` and `/dev/input/by-path` are populated by links to files in `/dev/input/`.
 - **Give yourself permission to access that device.**
   - This is that part I wasn't sure about. I suspect that the way I did it was wrong, but I'll give you the way I did it, and the way that seems like the right way but didn't work for me.
-  - What I ended up doing was `sudo chmod a+r /dev/input/by-id/[my-device-name]`.
+  - What I ended up doing was `sudo chmod a+rw /dev/input/by-id/[my-device-name]`.
   - What is typically done: most inputs should belong to a group ( usually `input`, but check by using `ls -l /dev/input/by-id/[my-device-name]` ), and you should be able to add yourself to whatever group the device belongs to by doing something like `usermod -a -G input yourusername`. In my case the device didn't seem to belong to any group except for root. In other cases even when the file belongs to input and the user is added to input error have still resulted.
 - **Add your device file directory to the first line of the config file**
 
