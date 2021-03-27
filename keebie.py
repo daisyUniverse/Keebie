@@ -43,13 +43,13 @@ class keyLedger():
 
             if keystate == keyEvent.key_down or keystate == keyEvent.key_hold: # If a new key has been pressed or a key we might have missed the down event for is being held
                 if not keycode in self.keysList: # If this key (which is held) is not in our list of keys that are held
-                    print(f"New key tracked: {keycode}")
+                    # print(f"New key tracked: {keycode}")
                     self.keysList += [keycode, ] # Add list of our (one) keycode to list of held keys
                     self.newKeysList += [keycode, ] # and to our list of newly held keys
 
             elif keystate == keyEvent.key_up: # If a key has been released
                 if keycode in self.keysList: # And if we have that key marked as held
-                    print(f"Tracked key {keycode} released.")
+                    # print(f"Tracked key {keycode} released.")
                     self.keysList.remove(keycode) # Then we remove it from our list of held keys
 
                 else:
