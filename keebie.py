@@ -473,9 +473,9 @@ def processKeycode(keycode): # Given a keycode that might be in the layer json f
                 writeConfig(1, value.split(':')[-1] + ".json") # Switch the layer's json into our config
                 print("Switched to layer file: " + value.split(':')[-1] + ".json") # Notify the user
 
-            try:
+            if "leds" in readJson(config()[1]):
                 setLeds(readJson(config()[1])["leds"])
-            except KeyError:
+            else:
                 print(f"Layer {readJson(config()[1])} has no leds property, writing empty")
                 writeJson(config()[1], {"leds": []})
                 setLeds([])
@@ -551,7 +551,13 @@ elif args.device != None:
 else:
     device = InputDevice(config()[0]) # Get a reference to the keyboard on the first line of our config file
 
-setLeds(readJson(config()[1])["leds"]) # Set LEDs based on the default layer
+
+if "leds" in readJson(config()[1]):
+    setLeds(readJson(config()[1])["leds"])
+else:
+    print(f"Layer {readJson(config()[1])} has no leds property, writing empty")
+    writeJson(config()[1], {"leds": []})
+    setLeds([])
 
 getSettings() # Get settings from the json file in config
 
