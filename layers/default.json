@@ -1,3 +1,4 @@
 {
-   "KEY_SPACE": "echo 'Hello World!'"
+   "KEY_SPACE": "echo 'Hello World!'",
+   "leds": []
 }
