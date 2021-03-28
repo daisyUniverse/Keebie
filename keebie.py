@@ -61,8 +61,8 @@ class keyLedger():
 
             if not self.newKeysList == []: # If new keys have pressed
                 self.freshKeysList = self.keysList # Set fresh keys equal to helf keys
-                print(f"New keys are: {self.newKeysList}") # Print debug info
-                print(f"Fresh keys are: {self.freshKeysList}")
+                # print(f"New keys are: {self.newKeysList}") # Print debug info
+                # print(f"Fresh keys are: {self.freshKeysList}")
 
     def getList(self, returnType = 0):
         """Returns the list of held keys in different forms based on returnType.
