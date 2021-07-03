@@ -195,11 +195,21 @@ def writeJson(filename, data, dir = layerDir): # Appends new data to a specified
     with open(dir+filename, 'w+') as outfile:
         json.dump(prevData, outfile, indent=3)
 
+def popDictRecursive(dct, keyList): # Given a dict and list of key names of dicts follow said list into the dicts recursivly and pop the finall result, it's hard to explain 
+    if len(keyList) == 1:
+        dct.pop(keyList[0])
+
+    elif len(keyList) > 1:
+        popDictRecursive(dct[keyList[0]], keyList[1:])
+
 def popJson(filename, key, dir = layerDir): # Removes the key key and it's value from a layer (or any json file named filename in the directory dir)
     with open(dir+filename) as f:
         prevData = json.load(f)
 
-    prevData.pop(key)
+    if type(key) == str:
+        prevData.pop(key)
+    elif type(key) == list:
+        popDictRecursive(prevData, key)
 
     with open(dir+filename, 'w+') as outfile:
         json.dump(prevData, outfile, indent=3)
@@ -367,9 +377,11 @@ def parseVars(commandStr): # Given a command from the layer json file replace va
             varName += char
             continue
 
-        returnStr += char # If none of the above (because we use contine) add char to returnStr
+        returnStr += char # If none of the above (because we use continue) add char to returnStr
 
     return returnStr # All done, return the result
+
+
 
 # Shells
 
@@ -539,19 +551,21 @@ def editLayer(layer = "default.json"): # Shell for editing a layer file (default
     
     keybindingsList = [] # Create a list for key-value pairs of keybindings
     for keybinding in LayerDict.items(): # For every key-value pair in our layers dict
-        keybindingsList += [keybinding, ] # Add the pair to our list of seting pairs
+        keybindingsList += [keybinding, ] # Add the pair to our list of keybinding pairs
 
     print("Choose what binding you would like to edit.") # Ask the user to choose which keybinding they wish to edit
     for bindingIndex in range(0, len(keybindingsList)): # For the index number of every binding pair in our list of binding pairs
-        if not keybindingsList[bindingIndex][0] == "leds":
-            print(f"-{bindingIndex + 1}: {keybindingsList[bindingIndex][0]}   [{keybindingsList[bindingIndex][1]}]") # Print an entry for every binding, as well as a number associated with it and it's current value
-        else:
+        if keybindingsList[bindingIndex][0] == "leds":
             print(f"-{bindingIndex + 1}: Edit LEDs")
+        elif keybindingsList[bindingIndex][0] == "vars":
+            print(f"-{bindingIndex + 1}: Edit layer varables")
+        else:
+            print(f"-{bindingIndex + 1}: {keybindingsList[bindingIndex][0]}   [{keybindingsList[bindingIndex][1]}]") # Print an entry for every binding, as well as a number associated with it and it's current value
     
     selection = input("Please make you selection: ") # Take the users input as to which binding they wish to edit
     
     try: # Try to...
-        intSelection= int(selection) # Comvert the users input from str to int
+        intSelection = int(selection) # Comvert the users input from str to int
         if intSelection in range(1, len(keybindingsList) + 1): # If the users input corresponds to a listed binding
             bindingSelected = keybindingsList[int(selection) - 1][0] # Store the selected bindings's key
             print(f"Editing item \"{bindingSelected}\"") # Tell the user we are editing their selection
@@ -577,6 +591,67 @@ def editLayer(layer = "default.json"): # Shell for editing a layer file (default
             onLedsInt.append(int(led)) # Cast the str to int and add it to a list
 
         writeJson(config()[1], {"leds": onLedsInt}) # Write the input list to the layer file
+
+    elif bindingSelected == "vars":
+        varsDict = readJson(layer, layerDir)["vars"] # Get a dict of layer vars in the layer file
+        
+        varsList = [] # Create a list for key-value pairs of layer vars
+        for var in varsDict.items(): # For every key-value pair in our layer vars dict
+            varsList += [var, ] # Add the pair to our list of layer var pairs
+
+        print("Choose what varable you would like to edit.") # Ask the user to choose which var they wish to edit
+        for varIndex in range(0, len(varsList)): # For the index number of every var pair in our list of var pairs
+            print(f"-{varIndex + 1}: {varsList[varIndex][0]}   [{varsList[varIndex][1]}]")
+            
+        selection = input("Please make you selection: ") # Take the users input as to which var they wish to edit
+    
+        try: # Try to...
+            intSelection = int(selection) # Comvert the users input from str to int
+            if intSelection in range(1, len(varsList) + 1): # If the users input corresponds to a listed var
+                varSelected = varsList[int(selection) - 1][0] # Store the selected var's key
+                print(f"Editing item \"{varSelected}\"") # Tell the user we are editing their selection
+            
+            else: # If the users input does not correspond to a listed var
+                print("Input out of range, exiting...") # Tell the user we are exiting
+                end() # And do so
+
+        except ValueError: # If the conversion to int fails
+            print("Exiting...") # Tell the user we are exiting
+            end() # And do so
+
+        print(f"Choose am action to take on {varSelected}.") # Ask the user to choose what they want to do with their selected var
+        # Prompt the user with a few possible actions
+        print("-1: Delete varable.")
+        print("-2: Edit varable name.")
+        print("-3: Edit varable value.")
+        print("-4: Cancel.")
+
+        selection = input("Please make you selection: ") # Take the users input as to what they want to do with their selected var
+
+        try: # Try to...
+            intSelection = int(selection) # Convert the users input from str to int
+
+            if intSelection == 1: # If the user selected delete
+                popJson(layer, ["vars", varSelected]) # Remove the var
+            elif intSelection == 2: # If the user selected edit name
+                varName = input("Please input new name: ") # Ask the user for a new name
+                varsDict.update({varName: varsDict[varSelected]}) # Add new name and value to varDict
+                writeJson(layer, {"vars": varsDict}) # Set layer's vars to varDict
+                popJson(layer, ["vars", varSelected]) # Note: if the user replaces the original name with the same name this will delete the binding
+            elif intSelection == 3: # If the user selected edit value
+                varVal = input("Please input new value: ") # Ask the user for a new value
+                varsDict.update({varSelected: varVal}) # Update name to new value in varDict
+                writeJson(layer, {"vars": varsDict}) # Set layer's vars to varDict
+            elif intSelection == 4: # If the user selected cancel
+                pass # Pass back to the previous level
+
+            else: # If the users input does not correspond to a listed value
+                print("Input out of range, exiting...") # Tell the user we are exiting
+                end() # And do so
+
+        except ValueError: # If the conversion to int fails
+            print("Exiting...") # Tell the user we are exiting
+            end() # And do so
 
     else:
         print(f"Choose am action to take on {bindingSelected}.") # Ask the user to choose what they want to do with their selected binding
