@@ -1,5 +1,5 @@
 {
-   "multiKeyMode": "combination",
-   "forceBackground": false,
-   "backgroundInversion": false
+	"multiKeyMode": "combination",
+	"forceBackground": false,
+	"backgroundInversion": false
 }
