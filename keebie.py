@@ -264,6 +264,7 @@ def setLeds(onLeds): # Sets the passed LEDs on (and any others off)
 def processKeycode(keycode): # Given a keycode that might be in the layer json file, check if it is and execute the appropriate commands
     if keycode in readJson(config()[1]): # If the keycode is in our layer's json file
         value = readJson(config()[1])[keycode] # Get the instructions associated with the keycode
+        value = parseVars(value) # Parse any varables that may appear in the command
 
         if value.startswith("layer:"): # If value is a layerswitch command
             if os.path.exists(layerDir+value.split(':')[-1] + ".json") == False: #if the layer has no json file
@@ -328,7 +329,47 @@ def keebLoop(): # Reading the keyboard
 
         processKeycode(ledger.getFresh(1)) # Check if ledger.freshKeysList matches a command in our layer's json file
 
+def parseVars(commandStr): # Given a command from the layer json file replace vars with their values and return the string
+    # Vars we will need in the loop
+    returnStr = "" # The string to be retuned
+    escaped = False # If we previously encountered an escape char
+    escapeChar = "\\" # What is out escape char
+    varChars = ("%", "%") # What characters start and end a varable name
+    inVar = False # If we are in a varable name
+    varName = "" # What the varables name is so far
 
+    for char in commandStr : # Iterate over the cars of the input
+        if escaped == True : # If char is escaped add it unconditionally and reset escaped
+            returnStr += char
+            escaped = False
+            continue
+
+        if escaped == False and char == escapeChar : # If char is en unescaped escape char set escaped
+            escaped = True
+            continue
+
+        if inVar == False and char == varChars[0] : # If we arn't in a varable and chars is the start of one set inVar
+            inVar = True
+            continue
+
+        if inVar == True and char == varChars[1] : # If we are in a varable and char ends it parse the varables value, add it to returnStr if valid, and reset inVar and varName
+            try :
+                returnStr += readJson(config()[1])["vars"][varName]
+            except KeyError :
+                print(f"unknown var {varName} in command {commandStr}, skiping command")
+                return ""
+
+            inVar = False
+            varName = ""
+            continue
+
+        if inVar == True : # If we are in a varable name add char to varName
+            varName += char
+            continue
+
+        returnStr += char # If none of the above (because we use contine) add char to returnStr
+
+    return returnStr # All done, return the result
 
 # Shells
 

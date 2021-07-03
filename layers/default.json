@@ -1,4 +1,8 @@
 {
-   "KEY_SPACE": "echo 'Hello World!'",
-   "leds": []
-}
+	"leds": [],
+	"vars": {
+		"greeting": "Hello World"
+	},
+	"KEY_SPACE": "echo '%greeting%!'"
+ }
+ 

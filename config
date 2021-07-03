@@ -1,3 +1,3 @@
-/dev/input/by-id/put-your-device-name-here
+/dev/input/event2
 default.json
 settings.json
