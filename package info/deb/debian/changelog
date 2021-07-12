@@ -1,0 +1,9 @@
+keebie (1.1.1) ubuntu; urgency=low
+
+
+  * Created a package
+  I made a package, I hope
+  
+  * Using dpkg buildpackages
+
+ -- Michael Basaj <michaelbasaj@protonmail.com>  Sat, 11 Jul 2021 13:27:00 -0400
