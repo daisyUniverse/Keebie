@@ -2,11 +2,6 @@
 
 SHELL=/bin/bash
 
-
-bin_path="/usr/bin/keebie"
-install_path="/usr/share/keebie/"
-
-
 build:
 
 build-arch:

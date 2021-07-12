@@ -1,4 +1,8 @@
-SHELL=/bin/bash
+export SHELL=/bin/bash
+
+export bin_path="/usr/bin/keebie"
+export install_path="/usr/share/keebie/"
+
 
 # .SILENT:
 
@@ -17,10 +21,10 @@ deb-build:
 
 check-for-changes:
 	@echo "MODIFIED FILES"
-	@git status --porcelain | grep "^ M" || echo "None"
+	@git status --porcelain | grep -E "^ ?M" || echo "None"
 
 	@echo "NEW FILES"
-	@git status --porcelain | grep "^??" || echo "None"
+	@git status --porcelain | grep -E "^ ?\?" || echo "None"
 
 	@echo "DELETED FILES"
-	@git status --porcelain | grep "^ D" || echo "None"
+	@git status --porcelain | grep -E "^ ?D" || echo "None"
