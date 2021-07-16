@@ -1,23 +1,29 @@
-export SHELL=/bin/bash
+SHELL=/bin/bash
 
-export bin_path="/usr/bin/keebie"
-export install_path="/usr/share/keebie/"
+bin_path="/usr/bin/keebie"
+install_path="/usr/share/keebie/"
 
+pkg_type="tar"
 
 # .SILENT:
 
 pre-pkg: check-for-changes
 
 
-deb: pre-pkg deb-build
-	@echo -e "\nbuilt a .deb package with dpkg-buildpackage"
-
-
-deb-build:
-	@echo -e "\narchiving package...\n"
-	dpkg-buildpackage -us -uc -F
-	rm -rfv "./debian/files"
-
+pkg: pre-pkg 
+	fpm --verbose -f \
+	-t $(pkg_type) \
+	-s dir \
+	-a all \
+	-p ../ \
+	-n keebie \
+	-d python3 \
+	-m "Michael Basaj <michaelbasaj@protonmail.com>" \
+	--after-install "./packaging/postinst" \
+	./keebie.py=/usr/bin/keebie \
+	./config=/usr/share/keebie/config \
+	./layers/=/usr/share/keebie/layers \
+	./settings.json=/usr/share/keebie/
 
 check-for-changes:
 	@echo "MODIFIED FILES"
