@@ -18,7 +18,11 @@ pkg: pre-pkg
 	-p ../ \
 	-n keebie \
 	-d python3 -d python3-evdev \
-	-m "Michael Basaj <michaelbasaj@protonmail.com>" \
+	--maintainer "Michael Basaj <michaelbasaj@protonmail.com>" \
+	--version "1.0.0" \
+	--license "none (yet)" \
+	--url https://github.com/robinuniverse/Keebie \
+	--description "A keyboard macro utility for Linux." \
 	./keebie.py=$(bin_path) \
 	./config=$(install_path) \
 	./layers/=$(install_path)/layers \
@@ -28,7 +32,7 @@ pkg: pre-pkg
 	# --after-install "./packaging/postinst" \
 	# --before-install "./packaging/prerm" \
 	# --after-remove "./packaging/postem" \
-	
+
 check-for-changes:
 	@echo "MODIFIED FILES"
 	@git status --porcelain | grep -E "^ ?M" || echo "None"
