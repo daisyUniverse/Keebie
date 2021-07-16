@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 #Keebie by Robin Universe & Friends
 
+from io import DEFAULT_BUFFER_SIZE
 from evdev import InputDevice, categorize, ecodes
 import sys
 import signal
@@ -9,15 +10,29 @@ import json
 import argparse
 import time
 import subprocess
+import shutil
+
+
+
+# Utilities
+
+print_debugs = False
+
+def dprint(*args, **kwargs):
+    if print_debugs == True :
+        print(*args, **kwargs)
 
 
 
 # Global vars
 
-filePath = os.path.abspath(os.path.dirname(sys.argv[0])) + "/" # Get the absolute path to the directory of this script for use when opening files
+templateDataDir = "/usr/share/keebie/"
+dataDir = os.path.expanduser("~") + "/.config/keebie/"
+dprint(dataDir)
 
-layerDir = filePath + "layers/" # Cache the full path to the /layers directory
-scriptDir = filePath + "scripts/" # Cache the full path to the /scripts directory
+layerDir = dataDir + "layers/"
+scriptDir = dataDir + "scripts/"
+
 
 
 
@@ -60,13 +75,13 @@ class keyLedger():
 
             if keystate == keyEvent.key_down or keystate == keyEvent.key_hold: # If a new key has been pressed or a key we might have missed the down event for is being held
                 if not keycode in self.keysList: # If this key (which is held) is not in our list of keys that are held
-                    # print(f"New key tracked: {keycode}")
+                    dprint(f"New key tracked: {keycode}")
                     self.keysList += [keycode, ] # Add list of our (one) keycode to list of held keys
                     self.newKeysList += [keycode, ] # and to our list of newly held keys
 
             elif keystate == keyEvent.key_up: # If a key has been released
                 if keycode in self.keysList: # And if we have that key marked as held
-                    # print(f"Tracked key {keycode} released.")
+                    dprint(f"Tracked key {keycode} released.")
                     self.keysList.remove(keycode) # Then we remove it from our list of held keys
 
                 else:
@@ -78,8 +93,8 @@ class keyLedger():
 
             if not self.newKeysList == []: # If new keys have pressed
                 self.freshKeysList = self.keysList # Set fresh keys equal to helf keys
-                # print(f"New keys are: {self.newKeysList}") # Print debug info
-                # print(f"Fresh keys are: {self.freshKeysList}")
+                dprint(f"New keys are: {self.newKeysList}") # Print debug info
+                dprint(f"Fresh keys are: {self.freshKeysList}")
 
     def getList(self, returnType = 0):
         """Returns the list of held keys in different forms based on returnType.
@@ -161,7 +176,7 @@ class keyLedger():
 # Config file
 
 def config(): # Open the config file and return a list of it's lines with leading and trailing spaces striped
-    f=open(filePath+"config","r") # Opens config file.
+    f = open(dataDir + "config","r") # Opens config file.
 
     if f.mode =='r':
         config = f.read().splitlines()
@@ -170,9 +185,9 @@ def config(): # Open the config file and return a list of it's lines with leadin
         return config
 
 def writeConfig(lineNum, data): # Writes some data to a line of the config file
-    lines = open(filePath+'config', 'r').readlines()
+    lines = open(dataDir + 'config', 'r').readlines()
     lines[lineNum] = data.strip() + "\n" # Ensure the data we are write will not interfere later lines
-    out = open(filePath+'config', 'w')
+    out = open(dataDir + 'config', 'w')
     out.writelines(lines)
     out.close()
 
@@ -243,16 +258,16 @@ settingsPossible = { # A dict of lists of valid values for each setting
 def getSettings(): # Reads the json file specified on the third line of config and sets the values of settings based on it's contents
     print(f"Loading settings from {config()[2]}") # Notify the user we are getting settings and tell them the file we are using to do so
 
-    settingsFile = readJson(config()[2], filePath) # Get a dict of the keys and values in our settings file
+    settingsFile = readJson(config()[2], dataDir) # Get a dict of the keys and values in our settings file
     for setting in settings.keys(): # For every setting we expect to be in our settings file
         if settingsFile[setting] in settingsPossible[setting]: # If the value in our settings file is valid
-            # print(f"Found valid value: \"{settingsFile[setting]}\" for setting: \"{setting}\"")
+            dprint(f"Found valid value: \"{settingsFile[setting]}\" for setting: \"{setting}\"")
             settings[setting] = settingsFile[setting] # Write it into our settins
 
         else :
             print(f"Value: \"{settingsFile[setting]}\" for setting: \"{setting}\" is invalid, defaulting to {settings[setting]}") # Warn the user of invalid settings in the settings file
             
-    # print(f"Settings are {settings}") # Tell the user the settings we ended up with
+    dprint(f"Settings are {settings}") # Tell the user the settings we ended up with
 
 
 
@@ -484,7 +499,7 @@ def addKey(key = None, command = None, keycodeTimeout = 1): # Shell for adding n
         end()
 
 def editSettings(): # Shell for editing settings
-    settingsFile = readJson(config()[2], filePath) # Get a dict of the keys and values in our settings file
+    settingsFile = readJson(config()[2], dataDir) # Get a dict of the keys and values in our settings file
     
     settingsList = [] # Create a list for key-value pairs of settings 
     for setting in settings.items(): # For every key-value pair in our settings dict
@@ -525,7 +540,7 @@ def editSettings(): # Shell for editing settings
         intSelection = int(selection) # Convert the users input from str to int
         if intSelection in range(1, len(settingsPossible[settingSelected]) + 1): # If the users input corresponds to a listed value
             valueSelected = settingsPossible[settingSelected][int(selection) - 1] # Store the selected value
-            writeJson(config()[2], {settingSelected: valueSelected}, filePath) # Write it into our settings json file
+            writeJson(config()[2], {settingSelected: valueSelected}, dataDir) # Write it into our settings json file
             print(f"Set \"{settingSelected}\" to \"{valueSelected}\"") # And tell the user we have done so
         
         else: # If the users input does not correspond to a listed value
@@ -693,6 +708,15 @@ def editLayer(layer = "default.json"): # Shell for editing a layer file (default
         end()
 
 
+
+# Setup
+
+def firstUses():
+    print("You are running keebie without user configuration files installed")
+    shutil.copytree(templateDataDir, dataDir)
+
+
+
 # Arguments
 
 parser = argparse.ArgumentParser() # Set up command line arguments
@@ -702,7 +726,10 @@ parser.add_argument("--device", help="Change target device")
 parser.add_argument("--detect", help="Detect keyboard device file", action="store_true")
 parser.add_argument("--add", help="Add new keys", action="store_true")
 parser.add_argument("--settings", help="Edits settings file", action="store_true")
-parser.add_argument("--edit", help="Edits specified layer file (or default layer if unspecified)", nargs="?", default=False, const="default.json", metavar="layer", choices=[i for i in os.listdir(layerDir) if os.path.splitext(i)[1] == ".json"])
+try :
+    parser.add_argument("--edit", help="Edits specified layer file (or default layer if unspecified)", nargs="?", default=False, const="default.json", metavar="layer", choices=[i for i in os.listdir(layerDir) if os.path.splitext(i)[1] == ".json"])
+except FileNotFoundError :
+    parser.add_argument("--edit", help="Edits specified layer file (or default layer if unspecified)", nargs="?", default=False, const="default.json", metavar="layer")
 
 args = parser.parse_args()
 
@@ -712,9 +739,16 @@ args = parser.parse_args()
 
 print("Welcome to Keebie")
 
+
+
+if not os.path.exists(dataDir):
+    firstUses()
+
+
+
 # Set up device
 if config()[0] == "/dev/input/by-id/put-your-device-name-here" and args.device == None:
-    print("You have not set your device file in " + filePath + "config")
+    print("You have not set your device file in " + dataDir + "config")
     resp = input("Would you like to detect a device by keypress now? [Y/n] ")
     if resp.lower().startswith("n"):
         sys.exit(0)

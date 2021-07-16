@@ -17,14 +17,18 @@ pkg: pre-pkg
 	-a all \
 	-p ../ \
 	-n keebie \
-	-d python3 \
+	-d python3 -d python3-evdev \
 	-m "Michael Basaj <michaelbasaj@protonmail.com>" \
-	--after-install "./packaging/postinst" \
-	./keebie.py=/usr/bin/keebie \
-	./config=/usr/share/keebie/config \
-	./layers/=/usr/share/keebie/layers \
-	./settings.json=/usr/share/keebie/
+	./keebie.py=$(bin_path) \
+	./config=$(install_path) \
+	./layers/=$(install_path)/layers \
+	./settings.json=$(install_path)
 
+	# --before-install "./packaging/preinst" \
+	# --after-install "./packaging/postinst" \
+	# --before-install "./packaging/prerm" \
+	# --after-remove "./packaging/postem" \
+	
 check-for-changes:
 	@echo "MODIFIED FILES"
 	@git status --porcelain | grep -E "^ ?M" || echo "None"
