@@ -16,9 +16,9 @@ import shutil
 
 # Utilities
 
-print_debugs = False
+print_debugs = False # Whether we should print debug information
 
-def dprint(*args, **kwargs):
+def dprint(*args, **kwargs): # Print debug info (or don't)
     if print_debugs == True :
         print(*args, **kwargs)
 
@@ -26,13 +26,12 @@ def dprint(*args, **kwargs):
 
 # Global vars
 
-templateDataDir = "/usr/share/keebie/"
-dataDir = os.path.expanduser("~") + "/.config/keebie/"
+templateDataDir = "/usr/share/keebie/" # Path where default user configuration files are installed
+dataDir = os.path.expanduser("~") + "/.config/keebie/" # Path where user configuration files should be stored
 dprint(dataDir)
 
-layerDir = dataDir + "layers/"
-scriptDir = dataDir + "scripts/"
-
+layerDir = dataDir + "layers/" # Cache the full path to the /layers directory
+scriptDir = dataDir + "scripts/" # Cache the full path to the /scripts directory
 
 
 
@@ -711,9 +710,9 @@ def editLayer(layer = "default.json"): # Shell for editing a layer file (default
 
 # Setup
 
-def firstUses():
-    print("You are running keebie without user configuration files installed")
-    shutil.copytree(templateDataDir, dataDir)
+def firstUses(): # Setup to be run when a user first runs keebie
+    shutil.copytree(templateDataDir, dataDir) # Copy template configuration files to user
+    print(f"configuration files copied from {templateDataDir} to {dataDir}") # And inform the user
 
 
 
@@ -739,12 +738,9 @@ args = parser.parse_args()
 
 print("Welcome to Keebie")
 
-
-
-if not os.path.exists(dataDir):
-    firstUses()
-
-
+if not os.path.exists(dataDir): # If the user we are running as does not have user configuration files
+    print("You are running keebie without user configuration files installed") # Inform the user
+    firstUses() # Run first time user setup
 
 # Set up device
 if config()[0] == "/dev/input/by-id/put-your-device-name-here" and args.device == None:
