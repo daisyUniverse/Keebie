@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 #Keebie by Robin Universe & Friends
 
-from io import DEFAULT_BUFFER_SIZE
 from evdev import InputDevice, categorize, ecodes
 import sys
 import signal
@@ -725,13 +724,17 @@ parser.add_argument("--device", help="Change target device")
 parser.add_argument("--detect", help="Detect keyboard device file", action="store_true")
 parser.add_argument("--add", help="Add new keys", action="store_true")
 parser.add_argument("--settings", help="Edits settings file", action="store_true")
+
 try :
     parser.add_argument("--edit", help="Edits specified layer file (or default layer if unspecified)", nargs="?", default=False, const="default.json", metavar="layer", choices=[i for i in os.listdir(layerDir) if os.path.splitext(i)[1] == ".json"])
 except FileNotFoundError :
     parser.add_argument("--edit", help="Edits specified layer file (or default layer if unspecified)", nargs="?", default=False, const="default.json", metavar="layer")
 
+parser.add_argument("--debug", help="Print extra debugging information", action="store_true")
+
 args = parser.parse_args()
 
+print_debugs = args.debug
 
 
 # Main code

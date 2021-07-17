@@ -5,6 +5,8 @@ install_path="/usr/share/keebie/"
 
 pkg_type="tar"
 
+maintainer="Michael Basaj <michaelbasaj@protonmail.com>"
+version="1.0.0"
 # .SILENT:
 
 pre-pkg: check-for-changes
@@ -18,8 +20,8 @@ pkg: pre-pkg
 	-p ../ \
 	-n keebie \
 	-d python3 -d python3-evdev \
-	--maintainer "Michael Basaj <michaelbasaj@protonmail.com>" \
-	--version "1.0.0" \
+	--maintainer $(maintainer) \
+	--version $(version) \
 	--license "none (yet)" \
 	--url https://github.com/robinuniverse/Keebie \
 	--description "A keyboard macro utility for Linux." \
