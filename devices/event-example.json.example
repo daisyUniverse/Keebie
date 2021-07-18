@@ -1,0 +1,7 @@
+{
+	"initial_layer": "default.json",
+	"event": "a file name in /dev/input/",
+	"udev_tests": [
+		"some strings for udev rule device identification"
+	]
+}

@@ -5,10 +5,10 @@
 # find the values vendor-id and product-id by using lsusb command
 # Note make sure you copy keebie.service to /etc/systemd/system before executing this script as sudo
 
-touch /etc/udev/rules.d/85-redragon-keyboard.rules 
+touch /etc/udev/rules.d/"$2".rules 
 cd /etc/udev/rules.d/
 
-echo 'SUBSYSTEM=="input", ATTRS{idVendor}=="0c45", ATTRS{idProduct}=="5004", MODE="0664", ENV{SYSTEMD_WANTS}="keebie.service"  TAG+="systemd"' > 85-redragon-keyboard.rules 
+echo 'SUBSYSTEM=="input", '"$1"'MODE="0664", ENV{SYSTEMD_WANTS}="keebie.service"  TAG+="systemd"' > "$2".rules 
 
 sleep 1s
 

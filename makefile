@@ -7,6 +7,7 @@ pkg_type="tar"
 
 maintainer="Michael Basaj <michaelbasaj@protonmail.com>"
 version="1.0.0"
+iteration="0"
 # .SILENT:
 
 pre-pkg: check-for-changes
@@ -22,13 +23,15 @@ pkg: pre-pkg
 	-d python3 -d python3-evdev \
 	--maintainer $(maintainer) \
 	--version $(version) \
+	--iteration $(iteration) \
 	--license "none (yet)" \
 	--url https://github.com/robinuniverse/Keebie \
 	--description "A keyboard macro utility for Linux." \
 	./keebie.py=$(bin_path) \
-	./config=$(install_path) \
-	./layers/=$(install_path)/layers \
-	./settings.json=$(install_path)
+	./layers/=$(install_path)/data/layers \
+	./settings.json=$(install_path)/data/ \
+	./devices/=$(install_path)/data/devices \
+	./setup_tools/=$(install_path)/setup_tools
 
 	# --before-install "./packaging/preinst" \
 	# --after-install "./packaging/postinst" \
