@@ -870,7 +870,7 @@ parser.add_argument("--verbose", "-v", help="Print extra debugging information",
 
 args = parser.parse_args()
 
-print_debugs = args.debug
+print_debugs = args.verbose
 
 
 # Main code
