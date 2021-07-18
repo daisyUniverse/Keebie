@@ -387,8 +387,11 @@ def readJson(filename, dir = layerDir): # Reads the file contents of a layer (or
     return data 
 
 def writeJson(filename, data, dir = layerDir): # Appends new data to a specified layer (or any json file named filename in the directory dir)
-    with open(dir+filename) as f:
-        prevData = json.load(f)
+    try: # Try to...
+        with open(dir+filename) as f: # Open an existing file
+            prevData = json.load(f) # And copy store its data
+    except FileNotFoundError: # If the file doesn't exist
+        prevData = {}
 
     prevData.update(data)
 
@@ -523,12 +526,12 @@ def getLayers(): # Lists all the json files in /layers and thier contents
         print(i+layerFi[i]) # And display thier contents to the user
     end()
 
-def detectKeyboard(): # Detect what file a keypress is coming from
+def detectKeyboard(path = "/dev/input/by-id/"): # Detect what file a keypress is coming from
     print("Please press a key on the desired input device...")
-    time.sleep(.5) # small delay to avoid detecting the device you started the script with
+    time.sleep(.5) # Small delay to avoid detecting the device you started the script with
     dev = ""
     while dev == "": # Wait for this command to output the device name, loops every 1s
-        dev = subprocess.check_output("inotifywatch /dev/input/by-id/* -t 1 2>&1 | grep /dev/input/by-id/ | awk 'NF{ print $NF }'", shell=True ).decode('utf-8').strip()
+        dev = subprocess.check_output("inotifywatch " + path +"/* -t 1 2>&1 | grep " + path + " | awk 'NF{ print $NF }'", shell=True ).decode('utf-8').strip()
     return dev
 
 def addKey(layer, key = None, command = None, keycodeTimeout = 1): # Shell for adding new macros
@@ -837,6 +840,50 @@ def editLayer(layer = "default.json"): # Shell for editing a layer file (default
     else:
         end()
 
+def newDevice(name = None, eventPath = "/dev/input"):
+    """Add a new json file to devices/."""
+    eventFile = detectKeyboard(eventPath) # Promt the user for a device
+    eventFile = os.path.basename(eventFile) # Get the devices filename from its filepath
+
+    # allUdevProperties = subprocess.check_output("udevadm info -a --name=/dev/input/" + eventFile + " | grep -P \"[^=\s]+==\\\"[^=\s]+\\\"\"", shell=True).decode('utf-8')
+
+    # udevProperties = []
+    # for property in allUdevProperties.splitlines():
+    #     udevProperties += [str(property).strip(), ]
+
+    input(f"\nDevice is {eventFile}, please press enter to continue...") # Ensure the stdin is empty
+
+    # for propertyIndex in range(0, len(udevProperties)):
+    #     print(f"-{propertyIndex + 1}: {udevProperties[propertyIndex]}")
+
+    # selectedProperties = input("Please select properties by thier numbers (comma and/or space separated list), if unsure look for \"ATTRS{idVendor}\" and \"ATTRS{idProduct}\"")
+    # selectedProperties = selectedProperties.replace(",", " ").split()
+
+    # selectedPropertiesInts = []
+    # for property in selectedProperties:
+    #     selectedPropertiesInts.append(int(property))
+
+    # dprint(selectedPropertiesInts)
+
+    # selectedPropertiesList = []
+    # for propertyIndex in range(1, len(udevProperties) + 1):
+    #     if propertyIndex in selectedPropertiesInts:
+    #         selectedPropertiesList += [udevProperties[propertyIndex - 1], ]
+
+    selectedPropertiesList = [f"KERNEL==\"{eventFile}\""] # Make an udev rule matching the device file
+
+    deviceJsonDict = { # Construct the device data dict
+        "initial_layer": "default.json",
+        "event": eventFile,
+        "udev_tests": selectedPropertiesList,
+    }
+
+    writeJson(eventFile + ".json", deviceJsonDict, deviceDir) # Write device data into a json file
+
+    macroDevice(eventFile + ".json").addUdevRule() # Create a mcro device and make a udev rule, the user will be prompted for sudo
+
+    end(False)
+
 
 
 # Setup
@@ -865,6 +912,8 @@ try:
     parser.add_argument("--edit", "-e", help="Edits specified layer file (or default layer if unspecified)", nargs="?", default=False, const="default.json", metavar="layer", choices=[i for i in os.listdir(layerDir) if os.path.splitext(i)[1] == ".json"])
 except FileNotFoundError :
     parser.add_argument("--edit", "-e", help="Edits specified layer file (or default layer if unspecified)", nargs="?", default=False, const="default.json", metavar="layer")
+
+parser.add_argument("--new", "-n", help="Add a new device file", action="store_true")
 
 parser.add_argument("--verbose", "-v", help="Print extra debugging information", action="store_true")
 
@@ -899,11 +948,14 @@ elif args.settings: # If the user passed --settings
     editSettings() # Launch the setting editing shell
 
 elif args.detect: # If the user passed --detect
-    detectKeyboard() # Launch the keyboard detection function
+    print(detectKeyboard("/dev/input/")) # Launch the keyboard detection function
 
 elif args.edit: # If the user passed --edit
     grabMacroDevices()
     editLayer(args.edit) # Launch the layer editing shell
+
+elif args.new: # If the user passed --new
+    newDevice()
 
 else: # If the user passed nothing
     time.sleep(.5)
