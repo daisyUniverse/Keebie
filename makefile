@@ -31,6 +31,7 @@ pkg: pre-pkg
 	./layers/=$(install_path)/data/layers \
 	./settings.json=$(install_path)/data/ \
 	./devices/=$(install_path)/data/devices \
+	./scripts/=$(install_path)/data/devices \
 	./setup_tools/=$(install_path)/setup_tools
 
 	# --before-install "./packaging/preinst" \
