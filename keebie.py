@@ -844,6 +844,11 @@ def newDevice(name = None, eventPath = "/dev/input"):
     """Add a new json file to devices/."""
     print("Setting up device")
 
+    initialLayer = input("Please provide a name for for this devices initial layer (non-existent layers will be created): ")
+
+    if os.path.exists(layerDir + initialLayer) == False:
+        createLayer(initialLayer)
+
     eventFile = detectKeyboard(eventPath) # Promt the user for a device
     eventFile = os.path.basename(eventFile) # Get the devices filename from its filepath
 
@@ -875,7 +880,7 @@ def newDevice(name = None, eventPath = "/dev/input"):
     selectedPropertiesList = [f"KERNEL==\"{eventFile}\""] # Make an udev rule matching the device file
 
     deviceJsonDict = { # Construct the device data dict
-        "initial_layer": "default.json",
+        "initial_layer": initialLayer,
         "event": eventFile,
         "udev_tests": selectedPropertiesList,
     }

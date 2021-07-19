@@ -27,11 +27,12 @@ pkg: pre-pkg
 	--license "none (yet)" \
 	--url https://github.com/robinuniverse/Keebie \
 	--description "A keyboard macro utility for Linux." \
+	--exclude "*.keep" \
 	./keebie.py=$(bin_path) \
 	./layers/=$(install_path)/data/layers \
 	./settings.json=$(install_path)/data/ \
 	./devices/=$(install_path)/data/devices \
-	./scripts/=$(install_path)/data/devices \
+	./scripts/=$(install_path)/data/scripts \
 	./setup_tools/=$(install_path)/setup_tools
 
 	# --before-install "./packaging/preinst" \
@@ -56,7 +57,7 @@ install:
 
 	sudo mkdir -pv $(install_path)/data/ $(install_path)/setup_tools/
 
-	sudo cp -rv -t $(install_path)/data/ ./layers/ ./settings.json ./devices/
+	sudo cp -rv -t $(install_path)/data/ ./layers/ ./settings.json ./devices/ ./scripts/
 	sudo cp -rv -t $(install_path)/setup_tools/ ./setup_tools/
 
 
