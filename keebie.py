@@ -443,7 +443,7 @@ settingsPossible = { # A dict of lists of valid values for each setting (or if f
 }
 
 def getSettings(): # Reads the json file specified on the third line of config and sets the values of settings based on it's contents
-    print(f"Loading settings from {dataDir}/settings.json") # Notify the user we are getting settings and tell them the file we are using to do so
+    dprint(f"Loading settings from {dataDir}/settings.json") # Notify the user we are getting settings and tell them the file we are using to do so
 
     settingsFile = readJson("settings.json", dataDir) # Get a dict of the keys and values in our settings file
     for setting in settings.keys(): # For every setting we expect to be in our settings file
@@ -842,6 +842,8 @@ def editLayer(layer = "default.json"): # Shell for editing a layer file (default
 
 def newDevice(name = None, eventPath = "/dev/input"):
     """Add a new json file to devices/."""
+    print("Setting up device")
+
     eventFile = detectKeyboard(eventPath) # Promt the user for a device
     eventFile = os.path.basename(eventFile) # Get the devices filename from its filepath
 
@@ -851,7 +853,7 @@ def newDevice(name = None, eventPath = "/dev/input"):
     # for property in allUdevProperties.splitlines():
     #     udevProperties += [str(property).strip(), ]
 
-    input(f"\nDevice is {eventFile}, please press enter to continue...") # Ensure the stdin is empty
+    input("\nA udev rule will be made next, sudo may prompt you for a password. Press enter to continue...") # Ensure the stdin is empty
 
     # for propertyIndex in range(0, len(udevProperties)):
     #     print(f"-{propertyIndex + 1}: {udevProperties[propertyIndex]}")

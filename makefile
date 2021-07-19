@@ -38,6 +38,7 @@ pkg: pre-pkg
 	# --before-install "./packaging/prerm" \
 	# --after-remove "./packaging/postem" \
 
+
 check-for-changes:
 	@echo "MODIFIED FILES"
 	@git status --porcelain | grep -E "^ ?M" || echo "None"
@@ -47,3 +48,16 @@ check-for-changes:
 
 	@echo "DELETED FILES"
 	@git status --porcelain | grep -E "^ ?D" || echo "None"
+
+
+install:
+	sudo cp -v ./keebie.py $(bin_path)
+
+	sudo mkdir -pv $(install_path)/data/ $(install_path)/setup_tools/
+
+	sudo cp -rv -t $(install_path)/data/ ./layers/ ./settings.json ./devices/
+	sudo cp -rv -t $(install_path)/setup_tools/ ./setup_tools/
+
+
+remove:
+	sudo rm -rfv $(bin_path) $(install_path)
