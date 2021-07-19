@@ -1,5 +1,6 @@
 {
 	"multiKeyMode": "combination",
 	"forceBackground": false,
-	"backgroundInversion": false
+	"backgroundInversion": false,
+	"loopDelay": 0.1
 }

@@ -3,6 +3,7 @@
 	"vars": {
 		"greeting": "Hello World"
 	},
-	"KEY_SPACE": "echo '%greeting%!'"
+	"KEY_SPACE": "echo '%greeting%!'",
+	"KEY_ESC": "layer:default"
  }
  
