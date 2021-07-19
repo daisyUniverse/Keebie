@@ -16,7 +16,7 @@ Keebie is basically a small script for assigning and executing commands on a the
 
  - If not you can download the source and run `make install`. Make sure you have `python3` and `python3-evdev` (or your package manager's equivalents) installed.
 
- - If you would like to build a package of Keebie [install fpm](https://fpm.readthedocs.io/en/latest/installing.html) run `make pkg pkg_type="<type>"`.
+ - If you would like to build a package of Keebie [install fpm](https://fpm.readthedocs.io/en/latest/installing.html) and run `make pkg pkg_type="<type>"`.
 
  Once you've installed Keebie you should run `keebie --new` to set up a macro device.
 
@@ -24,31 +24,31 @@ Keebie is basically a small script for assigning and executing commands on a the
 
 #### Options:
 
-`--layers`, `-l` 
+`--layers`, `-l`  
   Display the contents of all layer files.
 
-`--detect`, `-d`
+`--detect`, `-d`  
   Tell you the path to a device you press a key on.
 
-`--add [layer]`, `-a [layer]`
-  Launch a shell to add a macro to a layer, if no layer is specified this adds to `default.json`.
-  This requires that at least one device has been set up with `--edit`
+`--add [layer]`, `-a [layer]`  
+  Launch a shell to add a macro to a layer, if no layer is specified this adds to `default.json`.  
+  This requires that at least one device has been set up with `--edit`  
   See layer syntax section below for more information on special syntax for doing things other than commands.
 
-`--settings`, `-s`
+`--settings`, `-s`  
   Launch a shell to edit your settings, see the settings section below
 
-`--edit [layer]`, `-e [layer]`
+`--edit [layer]`, `-e [layer]`  
   Launch a shell to edit a layer and its macros, if no layer is specified this adds to `default.json`.
 
-`--new`, `-n`
-  Launch a shell to set up a device for use with Keebie, also make a udev rule to give access to the device which will require you to give a password to sudo.
+`--new`, `-n`  
+  Launch a shell to set up a device for use with Keebie, also make a udev rule to give access to the device which will require you to give a password to sudo.  
   You should run this should first upon installation.
 
-`--verbose`, `-v`
+`--verbose`, `-v`  
   Makes Keebie more verbose, good for debugging.
 
-`-h`, `--help`
+`-h`, `--help`  
   Print usage information.
 
 
@@ -57,20 +57,20 @@ Keebie is basically a small script for assigning and executing commands on a the
 
 Keebie has a few settings that may be edited with `--settings` (or `-s`), here is what the settings are.
 
-`multiKeyMode`
-  Decides how Keebie handles multiple held keys.
-  `combination`: How you would expect things to work, held keys are treated together.
-  `sequence`: Held keys are treated together based on the order they were held in. Its weird but might help to cram more macros onto a keyboard.
+`multiKeyMode`  
+  Decides how Keebie handles multiple held keys.  
+  `combination`: How you would expect things to work, held keys are treated together.  
+  `sequence`: Held keys are treated together based on the order they were held in. Its weird but might help to cram more macros onto a keyboard.  
 
-`forceBackground`
-  `True`: All commands should be run in the background (as opposed to waiting for them to finish before continuing).
-  `False`: Commands are left unchanged (for now).
+`forceBackground`  
+  `True`: All commands should be run in the background (as opposed to waiting for them to finish before continuing).  
+  `False`: Commands are left unchanged (for now).  
 
-`backgroundInversion`
-  `True`: Make all background commands are made to run in the foreground an vice-versa. If combined with `forceBackground` is `True` all commands run in the foreground.
-  `False`: Commands are left unchanged.
+`backgroundInversion`  
+  `True`: Make all background commands are made to run in the foreground an vice-versa. If combined with `forceBackground` is `True` all commands run in the foreground.  
+  `False`: Commands are left unchanged.  
 
-`loopDelay`
+`loopDelay`  
   Decides how often Keebie reads devices. Higher values lead to less responsive macros, lower values lead to higher CPU usage, setting this to 0 will eat a lot of CPU time.
 
 
@@ -79,14 +79,14 @@ Keebie has a few settings that may be edited with `--settings` (or `-s`), here i
 
 Keebie interprets some special syntax listed below
 
-`layer:<layername>`
+`layer:<layername>`  
   This will switch to the specified layer, when entering this into the `--add` shell you will be prompted to set up the layer.
 
-`<script type>:<script name>`
-  This will launch different types of scripts in `~/.config/keebie/scripts/`.
-  Script types are as follows
-   - `script` will launch the named script with `bash`.
-   - `py` will launch the named script with `python`.
-   - `py2` will launch the named script with `python2`.
-   - `py3` will launch the named script with `python3`.
-   - `exec` will execute the named file without an interpreter.
+`<script type>:<script name>`  
+  This will launch different types of scripts in `~/.config/keebie/scripts/`.  
+  Script types are as follows  
+   - `script` will launch the named script with `bash`.  
+   - `py` will launch the named script with `python`.  
+   - `py2` will launch the named script with `python2`.  
+   - `py3` will launch the named script with `python3`.  
+   - `exec` will execute the named file without an interpreter.  
