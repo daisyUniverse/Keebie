@@ -190,14 +190,18 @@ class macroDevice():
 
     def addUdevRule(self, priority = 85):
         """Generate a udev rule for this device."""
-        path = f"{priority}-keebie-{self.name}" # Name of the file for the rule (file extension added by the script)
+        path = f"{priority}-keebie-{self.name}.rules" # Name of the file for the rule
         rule = ""
 
         for test in self.udevTests: # For all the udev tests
             rule += test + ", " # Add them together with commas
             dprint(rule)
 
+        writeJson(self.name + ".json", {"udev_rule": path}, deviceDir) # Save the udev rule filepath for removeDevice()
+
         subprocess.run(["sudo", "sh", installDataDir + "/setup_tools/udevRule.sh", rule, path]) # Run the udev setup script with sudo
+        
+        subprocess.run(["sudo", "udevadm", "test", "/sys/class/input/event3"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL) # Force udev to parse the new rule for the device
 
     def grabDevice(self):
         """Grab the device and set self.device to the grabbed device."""
@@ -527,11 +531,14 @@ def getLayers(): # Lists all the json files in /layers and thier contents
     end()
 
 def detectKeyboard(path = "/dev/input/by-id/"): # Detect what file a keypress is coming from
+    print("Gaining sudo to watch root owned files, sudo may prompt you for a password") # Warn the user we need sudo
+    subprocess.run(["sudo", "echo",  "have sudo"]) # Get sudo
+
     print("Please press a key on the desired input device...")
     time.sleep(.5) # Small delay to avoid detecting the device you started the script with
     dev = ""
     while dev == "": # Wait for this command to output the device name, loops every 1s
-        dev = subprocess.check_output("inotifywatch " + path +"/* -t 1 2>&1 | grep " + path + " | awk 'NF{ print $NF }'", shell=True ).decode('utf-8').strip()
+        dev = subprocess.check_output("sudo inotifywatch " + path +"/* -t 1 2>&1 | grep " + path + " | awk 'NF{ print $NF }'", shell=True ).decode('utf-8').strip()
     return dev
 
 def addKey(layer, key = None, command = None, keycodeTimeout = 1): # Shell for adding new macros
@@ -840,16 +847,19 @@ def editLayer(layer = "default.json"): # Shell for editing a layer file (default
     else:
         end()
 
-def newDevice(name = None, eventPath = "/dev/input"):
+def newDevice(eventPath = "/dev/input/"):
     """Add a new json file to devices/."""
     print("Setting up device")
 
-    initialLayer = input("Please provide a name for for this devices initial layer (non-existent layers will be created): ")
+    initialLayer = input("Please provide a name for for this devices initial layer (non-existent layers will be created, default.json by default): ") # Prompt the user for a layer filename
 
-    if os.path.exists(layerDir + initialLayer) == False:
-        createLayer(initialLayer)
+    if initialLayer.strip() == "": # If the user did not provide a layer name
+        initialLayer = "default.json" # Default to default.json
 
-    eventFile = detectKeyboard(eventPath) # Promt the user for a device
+    if os.path.exists(layerDir + initialLayer) == False: # If the users chosen layer does not exist
+        createLayer(initialLayer) # Create it
+
+    eventFile = detectKeyboard(eventPath) # Prompt the user for a device
     eventFile = os.path.basename(eventFile) # Get the devices filename from its filepath
 
     # allUdevProperties = subprocess.check_output("udevadm info -a --name=/dev/input/" + eventFile + " | grep -P \"[^=\s]+==\\\"[^=\s]+\\\"\"", shell=True).decode('utf-8')
@@ -891,6 +901,24 @@ def newDevice(name = None, eventPath = "/dev/input"):
 
     end(False)
 
+def removeDevice(name = None):
+    """Removes a device file from deviceDir and udev rule based on passed name. If no name is passed prompt the user to choose one."""
+    if name == None or name == True: # If no name was provided
+        print("Devices:")
+
+        deviceList = os.listdir(deviceDir) # Get a list of device files
+        for deviceIndex in range(0, len(deviceList)): # For all device files
+            print(f"-{deviceIndex + 1}: {deviceList[deviceIndex]}") # Print thier names
+        
+        selection = int(input("Please make your selection : ")) # Prompt the user for a selection
+        name = deviceList[selection - 1] # Set name based on the users selection
+    
+    udevRule = readJson(name, deviceDir)["udev_rule"] # Cache the path to the devices udev rule
+
+    print("removing device file and udev rule, sudo may prompt you for a password.") # Warn the user we need sudo
+    os.remove(deviceDir + name) # Remove the device file
+    subprocess.run(["sudo", "rm", "-f", "/etc/udev/rules.d/" + udevRule]) # Remove the udev rule
+
 
 
 # Setup
@@ -922,6 +950,11 @@ except FileNotFoundError :
 
 parser.add_argument("--new", "-n", help="Add a new device file", action="store_true")
 
+try:
+    parser.add_argument("--remove", "-r", help="Remove specified device, if no device is specified you will be prompted", nargs="?", default=False, const=True, metavar="device", choices=[i for i in os.listdir(deviceDir) if os.path.splitext(i)[1] == ".json"])
+except FileNotFoundError :
+    parser.add_argument("--remove", "-r", help="Remove specified device, if no device is specified you will be prompted", nargs="?", default=False, const=True, metavar="device")
+    
 parser.add_argument("--verbose", "-v", help="Print extra debugging information", action="store_true")
 
 args = parser.parse_args()
@@ -962,7 +995,10 @@ elif args.edit: # If the user passed --edit
     editLayer(args.edit) # Launch the layer editing shell
 
 elif args.new: # If the user passed --new
-    newDevice()
+    newDevice() # Launch the device addition shell
+
+elif args.remove: # If the user passed --remove
+    removeDevice(args.remove) # Launch the device removal shell
 
 else: # If the user passed nothing
     time.sleep(.5)

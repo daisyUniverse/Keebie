@@ -58,7 +58,7 @@ install:
 	sudo mkdir -pv $(install_path)/data/ $(install_path)/setup_tools/
 
 	sudo cp -rv -t $(install_path)/data/ ./layers/ ./settings.json ./devices/ ./scripts/
-	sudo cp -rv -t $(install_path)/setup_tools/ ./setup_tools/
+	sudo cp -rv -t $(install_path)/ ./setup_tools/
 
 
 remove:

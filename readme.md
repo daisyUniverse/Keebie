@@ -45,6 +45,9 @@ Keebie is basically a small script for assigning and executing commands on a the
    - Launch a shell to set up a device for use with Keebie, also make a udev rule to give access to the device which will require you to give a password to sudo.
    - You should run this should first upon installation.
 
+ - `--remove [device]`, `-r [device]`
+   - Launch into a shell to remove device file and udev rule, if you don't specify a device you will be prompted for one.
+
  - `--verbose`, `-v`
    - Makes Keebie more verbose, good for debugging.
 
