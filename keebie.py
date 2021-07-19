@@ -37,13 +37,20 @@ scriptDir = dataDir + "scripts/" # Cache the full path to the /scripts directory
 
 # Signal handling
 
+devicesAreGrabbed = False # A bool to track if devices have beed grabbed
+
 def signal_handler(signal, frame):
     end()
 
-def end(ungrab=True): # Properly close the device file and exit the script
+def end(ungrab=None): # Properly close the device file and exit the script
+    print() # Make sure there is a newline
+    if ungrab == None: # If ungrab was not set
+        ungrab = devicesAreGrabbed # set it to devicesAreGrabbed
+
     if ungrab == True: # If we need to clean up grabbed macroDevices
         ungrabMacroDevices() # Ungrab all devices
         closeDevices() # Cleanly close all devices
+
     sys.exit(0) # Exit without error
 
 
@@ -346,11 +353,17 @@ def setupMacroDevices():
 
 def grabMacroDevices():
     """Grab all devices with macroDevices."""
+    global devicesAreGrabbed # Globallize devicesAreGrabbed
+    devicesAreGrabbed = True # And set it true
+
     for device in macroDeviceList:
         device.grabDevice()
 
 def ungrabMacroDevices():
     """Ungrab all devices with macroDevices."""
+    global devicesAreGrabbed # Globallize devicesAreGrabbed
+    devicesAreGrabbed = False # And set it false
+
     for device in macroDeviceList:
         device.ungrabDevice()
 
@@ -626,7 +639,7 @@ def editSettings(): # Shell for editing settings
     
     except ValueError: # If the conversion to int fails
         print("Exiting...") # Tell the user we are exiting
-        end(False) # And do so
+        end() # And do so
 
     if intSelection in range(1, len(settingsList) + 1): # If the users input corresponds to a listed setting
         settingSelected = settingsList[int(selection) - 1][0] # Store the selected setting's name
@@ -634,7 +647,7 @@ def editSettings(): # Shell for editing settings
     
     else: # If the users input does not correspond to a listed setting
         print("Input out of range, exiting...") # Tell the user we are exiting
-        end(False) # And do so
+        end() # And do so
 
     if type == settingsPossible[settingSelected][0]: # If first element of settingsPossible is type
         print(f"Enter a value {settingSelected} that is of one of these types.")
@@ -645,7 +658,7 @@ def editSettings(): # Shell for editing settings
 
         if selection == "": # If none is provided
             print("Exiting...")
-            end(False) # Exit
+            end() # Exit
 
         for typePossible in settingsPossible[settingSelected]: # For all valid types
             dprint(typePossible)
@@ -662,7 +675,7 @@ def editSettings(): # Shell for editing settings
             print(f"Set \"{settingSelected}\" to \"{selection}\"")
         else:
             print("Input can't be casted to a supported type, exiting...") # Complain about the bad input
-            end(False) # And exit
+            end() # And exit
 
     else:
         print(f"Choose one of {settingSelected}\'s possible values.") # Ask the user to choose which value they want to assign to their selected setting
@@ -685,11 +698,11 @@ def editSettings(): # Shell for editing settings
             
             else: # If the users input does not correspond to a listed value
                 print("Input out of range, exiting...") # Tell the user we are exiting
-                end(False) # And do so
+                end() # And do so
 
         except ValueError: # If the conversion to int fails
             print("Exiting...") # Tell the user we are exiting
-            end(False) # And do so
+            end() # And do so
 
     getSettings() # Refresh the settings in our settings dict with the newly changed setting
 
@@ -699,7 +712,7 @@ def editSettings(): # Shell for editing settings
         editSettings() # Restart the shell
 
     else:
-        end(False)
+        end()
 
 def editLayer(layer = "default.json"): # Shell for editing a layer file (default by default)
     LayerDict = readJson(layer, layerDir) # Get a dict of keybindings in the layer file
@@ -899,7 +912,7 @@ def newDevice(eventPath = "/dev/input/"):
 
     macroDevice(eventFile + ".json").addUdevRule() # Create a mcro device and make a udev rule, the user will be prompted for sudo
 
-    end(False)
+    end()
 
 def removeDevice(name = None):
     """Removes a device file from deviceDir and udev rule based on passed name. If no name is passed prompt the user to choose one."""
