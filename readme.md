@@ -16,7 +16,7 @@ Keebie is basically a small script for assigning and executing commands on a the
 
  - If not you can download the source and run `make install`. Make sure you have `python3` and `python3-evdev` (or your package manager's equivalents) installed.
 
- - If you would like to build a package of Keebie [install fpm](https://fpm.readthedocs.io/en/latest/installing.html) and run `make pkg pkg_type="<type>"`.
+ - If you would like to build a package of Keebie download the source, [install fpm](https://fpm.readthedocs.io/en/latest/installing.html), and run `make pkg pkg_type="<type>"`.
 
  Once you've installed Keebie you should run `keebie --new` to set up a macro device.
 
