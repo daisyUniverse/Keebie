@@ -33,6 +33,7 @@ Keebie is basically a small script for assigning and executing commands on a the
 `--add [layer]`, `-a [layer]`
   Launch a shell to add a macro to a layer, if no layer is specified this adds to `default.json`.
   This requires that at least one device has been set up with `--edit`
+  See layer syntax section below for more information on special syntax for doing things other than commands.
 
 `--settings`, `-s`
   Launch a shell to edit your settings, see the settings section below
@@ -71,3 +72,21 @@ Keebie has a few settings that may be edited with `--settings` (or `-s`), here i
 
 `loopDelay`
   Decides how often Keebie reads devices. Higher values lead to less responsive macros, lower values lead to higher CPU usage, setting this to 0 will eat a lot of CPU time.
+
+
+
+#### Layer syntax:
+
+Keebie interprets some special syntax listed below
+
+`layer:<layername>`
+  This will switch to the specified layer, when entering this into the `--add` shell you will be prompted to set up the layer.
+
+`<script type>:<script name>`
+  This will launch different types of scripts in `~/.config/keebie/scripts/`.
+  Script types are as follows
+   - `script` will launch the named script with `bash`.
+   - `py` will launch the named script with `python`.
+   - `py2` will launch the named script with `python2`.
+   - `py3` will launch the named script with `python3`.
+   - `exec` will execute the named file without an interpreter.
