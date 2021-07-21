@@ -554,7 +554,7 @@ def detectKeyboard(path = "/dev/input/by-id/"): # Detect what file a keypress is
         dev = subprocess.check_output("sudo inotifywatch " + path +"/* -t 1 2>&1 | grep " + path + " | awk 'NF{ print $NF }'", shell=True ).decode('utf-8').strip()
     return dev
 
-def addKey(layer, key = None, command = None, keycodeTimeout = 1): # Shell for adding new macros
+def addKey(layer = "default.json", key = None, command = None, keycodeTimeout = 1): # Shell for adding new macros
     ledger = keyLedger() # Reset the keyLedger
 
     if key == None and command == None:
@@ -837,10 +837,10 @@ def editLayer(layer = "default.json"): # Shell for editing a layer file (default
             if intSelection == 1: # If the user selected delete
                 popJson(layer, bindingSelected) # Remove the binding
             elif intSelection == 2: # If the user selected edit key
-                addKey(command = LayerDict[bindingSelected]) # Launch the key addition shell and preserve the command
+                addKey(layer, command = LayerDict[bindingSelected]) # Launch the key addition shell and preserve the command
                 popJson(layer, bindingSelected) # Note: if the user replaces the original key with the same key this will delete the binding
             elif intSelection == 3: # If the user selected edit command
-                addKey(key = bindingSelected) # Launch the key addition shell and preserve the key
+                addKey(layer, key = bindingSelected) # Launch the key addition shell and preserve the key
             elif intSelection == 4: # If the user selected cancel
                 pass # Pass back to the previous level
 
