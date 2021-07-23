@@ -354,9 +354,27 @@ def setupMacroDevices():
     deviceJsonList = [deviceJson for deviceJson in os.listdir(deviceDir) if os.path.splitext(deviceJson)[1] == ".json"] # Get list of json files in deviceDir
     
     dprint(deviceJsonList) # Print debug info
+    dprint([device.name for device in macroDeviceList])
 
+    for device in macroDeviceList: # For all preexisting devices
+        if not device.name + ".json" in deviceJsonList: # If a preexisting device is not in our list of devices
+            dprint(f"Device {device.name} has been removed")
+            macroDeviceList.remove(device) # Delete it (It should already be closed)
+
+    dprint([device.name for device in macroDeviceList])
+
+    newMacroDeviceList = [] # Set up an empty list for new devices
     for deviceJson in deviceJsonList: # For all json files in deviceDir
-        macroDeviceList += [macroDevice(deviceJson), ] # Setup a macroDevice instance for all files and save them to macroDeviceList
+        for device in macroDeviceList: # For all preexisting devices
+            if deviceJson == device.name + ".json": # If the new device is already known
+                dprint(f"Device {device.name} already known")
+                break
+
+        else: # If the loop was never broken
+            dprint("New device " + deviceJson)
+            newMacroDeviceList += [macroDevice(deviceJson), ] # Set up a macroDevice instance for all files and save them to newMacroDeviceList
+
+    macroDeviceList += newMacroDeviceList # Add the list ofnew devices to the list of preexisting ones
 
 def grabMacroDevices():
     """Grab all devices with macroDevices."""
@@ -939,6 +957,8 @@ def removeDevice(name = None):
     os.remove(deviceDir + name) # Remove the device file
     subprocess.run(["sudo", "rm", "-f", "/etc/udev/rules.d/" + udevRule]) # Remove the udev rule
 
+    end()
+
 
 
 # Setup
@@ -1040,13 +1060,14 @@ def sendResume():
         dprint("No process to resume")
 
 def pause(signal, frame):
-    """Ungrab all macro devices and wait until paused is set to fales by another function (resume())."""
+    """Ungrab all macro devices."""
     print("Pausing...")
 
     global paused
-    paused = True # Save that we have been paused
+    paused = True # Save that we have been paused)
 
     ungrabMacroDevices() # Ungrab all devices so the pausing process can use them
+    closeDevices() # Close our macro devices
 
 def resume(signal, frame):
     """Grab all macro devices and refresh our setting after being paused (or just if some changes were made we need to load)."""
@@ -1057,6 +1078,7 @@ def resume(signal, frame):
     getSettings() # Refresh our settings
 
     if paused == True: # If we were paused prior
+        setupMacroDevices() # Set our macro devices up again to detect changes
         grabMacroDevices() # Grab all our devices back
 
     paused = False # Save that we are no longer paused
@@ -1135,9 +1157,13 @@ elif args.edit: # If the user passed --edit
     editLayer(args.edit) # Launch the layer editing shell
 
 elif args.new: # If the user passed --new
+    sendPause() # Ask a running keebie loop (if one exists) to pause so it will detect the new device when we're done
+
     newDevice() # Launch the device addition shell
 
 elif args.remove: # If the user passed --remove
+    sendPause() # Ask a running keebie loop (if one exists) to pause so it will detect the removed device when we're done
+
     removeDevice(args.remove) # Launch the device removal shell
 
 else: # If the user passed nothing
@@ -1160,5 +1186,7 @@ else: # If the user passed nothing
     grabMacroDevices() # Grab all the devices
 
     while True : # Enter an infinite loop
-        readDevices() # Read all devices and process the keycodes
+        if paused == False: # If we are not paused
+            readDevices() # Read all devices and process the keycodes
+    
         time.sleep(settings["loopDelay"]) # Sleep so we don't eat the poor little CPU
