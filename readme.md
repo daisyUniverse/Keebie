@@ -14,7 +14,7 @@ Keebie is basically a small script for assigning and executing commands on a the
 
  - If somebody has made available a package for your OS go ahead install it and move on.
 
- - If not you can download the source and run `make install`. Make sure you have `python3` and `python3-evdev` (or your package manager's equivalents) installed.
+ - If not you can download the source and run `make install`. Make sure you have `python3`, `python3-evdev`, and `inotify-tools` (or your package manager's equivalents) installed.
 
  - If you would like to build a package of Keebie download the source, [install fpm](https://fpm.readthedocs.io/en/latest/installing.html), and run `make pkg pkg_type="<type>"`.
 
