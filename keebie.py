@@ -33,23 +33,33 @@ layerDir = dataDir + "layers/" # Cache the full path to the /layers directory
 deviceDir = dataDir + "devices/" # Cache the full path to the /devices directory
 scriptDir = dataDir + "scripts/" # Cache the full path to the /scripts directory
 
+pidPath = "/var/run/keebie/keebie.pid" # A Path into which we should store the PID of a running looping instance of keebie
+
 
 
 # Signal handling
 
 devicesAreGrabbed = False # A bool to track if devices have beed grabbed
 
+savedPid = False # A bool to store if this process has writen to the PID file
+paused = False # A bool to store if the process has sent a pause signal to a running keebie loop
+havePaused = False # A bool to store if this process has been signaled to pause by wnother instance
+
 def signal_handler(signal, frame):
     end()
 
-def end(ungrab=None): # Properly close the device file and exit the script
+def end(): # Properly close the device file and exit the script
     print() # Make sure there is a newline
-    if ungrab == None: # If ungrab was not set
-        ungrab = devicesAreGrabbed # set it to devicesAreGrabbed
 
-    if ungrab == True: # If we need to clean up grabbed macroDevices
+    if devicesAreGrabbed == True: # If we need to clean up grabbed macroDevices
         ungrabMacroDevices() # Ungrab all devices
         closeDevices() # Cleanly close all devices
+
+    if havePaused == True: # if we have told a running keebie loop to pause
+        sendResume() # Tell it to resume
+
+    if savedPid == True: # If we have writen to the PID file
+        removePid() # Remove our PID files
 
     sys.exit(0) # Exit without error
 
@@ -226,11 +236,8 @@ class macroDevice():
     def close(self):
         """Try to close the device file gracefully."""
         print("closing device " + self.name)
-        if self.device.fd > -1:
-            try:
-                os.close(self.device.fd)
-            finally:
-                self.device.fd = -1
+
+        self.device.close() # Close the device
 
     def read(self, process=True):
         """Read all queued events (if any), update the ledger, and process the keycodes (or don't)."""
@@ -347,9 +354,27 @@ def setupMacroDevices():
     deviceJsonList = [deviceJson for deviceJson in os.listdir(deviceDir) if os.path.splitext(deviceJson)[1] == ".json"] # Get list of json files in deviceDir
     
     dprint(deviceJsonList) # Print debug info
+    dprint([device.name for device in macroDeviceList])
 
+    for device in macroDeviceList: # For all preexisting devices
+        if not device.name + ".json" in deviceJsonList: # If a preexisting device is not in our list of devices
+            dprint(f"Device {device.name} has been removed")
+            macroDeviceList.remove(device) # Delete it (It should already be closed)
+
+    dprint([device.name for device in macroDeviceList])
+
+    newMacroDeviceList = [] # Set up an empty list for new devices
     for deviceJson in deviceJsonList: # For all json files in deviceDir
-        macroDeviceList += [macroDevice(deviceJson), ] # Setup a macroDevice instance for all files and save them to macroDeviceList
+        for device in macroDeviceList: # For all preexisting devices
+            if deviceJson == device.name + ".json": # If the new device is already known
+                dprint(f"Device {device.name} already known")
+                break
+
+        else: # If the loop was never broken
+            dprint("New device " + deviceJson)
+            newMacroDeviceList += [macroDevice(deviceJson), ] # Set up a macroDevice instance for all files and save them to newMacroDeviceList
+
+    macroDeviceList += newMacroDeviceList # Add the list ofnew devices to the list of preexisting ones
 
 def grabMacroDevices():
     """Grab all devices with macroDevices."""
@@ -361,7 +386,7 @@ def grabMacroDevices():
 
 def ungrabMacroDevices():
     """Ungrab all devices with macroDevices."""
-    global devicesAreGrabbed # Globallize devicesAreGrabbed
+    global devicesAreGrabbed # Globalize devicesAreGrabbed
     devicesAreGrabbed = False # And set it false
 
     for device in macroDeviceList:
@@ -932,6 +957,8 @@ def removeDevice(name = None):
     os.remove(deviceDir + name) # Remove the device file
     subprocess.run(["sudo", "rm", "-f", "/etc/udev/rules.d/" + udevRule]) # Remove the udev rule
 
+    end()
+
 
 
 # Setup
@@ -939,6 +966,122 @@ def removeDevice(name = None):
 def firstUses(): # Setup to be run when a user first runs keebie
     shutil.copytree(installDataDir + "data/", dataDir) # Copy template configuration files to user
     print(f"configuration files copied from {installDataDir}/data/ to {dataDir}") # And inform the user
+
+
+
+# Inter-process communication
+
+def savePid():
+    """Save our PID into the PID file. Raise FileExistsError if the PID file already exists."""
+    dprint("Saving PID to " + pidPath)
+
+    global savedPid # Globalize savedPid
+
+    pid = os.getpid() # Get this process' PID
+
+    if os.path.exists(pidPath) == False: # If no PID file already exists
+        with open(pidPath, "wt") as pidFile: # Create and open the PID file
+            pidFile.write(str(pid)) # Write our PID into it
+            savedPid = True # Record that we have saved our PID
+
+    else:
+        dprint("PID already recorded")
+        raise FileExistsError("PID already recorded")
+
+def removePid():
+    """Remove the PID file if it exists."""
+    dprint("Removing PID file " + pidPath)
+
+    global savedPid # Globalize savedPid
+
+    if os.path.exists(pidPath) == True: # If the PID file exists
+        os.remove(pidPath) # Remove it
+        savedPid = False # And record it's removal
+
+    else:
+        print("PID was never stored?")
+
+def getPid():
+    """Return the PID in the PID file. Raise FileNotFoundError if the file does not exist."""
+    if os.path.exists(pidPath) == True: # If the PID file exists
+        with open(pidPath, "rt") as pidFile: # Open it
+            return int(pidFile.read()) # And return it's contents as an int
+
+    else:
+        dprint("PID file dosn't exist")
+        raise FileNotFoundError("PID file dosn't exist")
+
+def checkPid():
+    """Try to get the PID and check if it is valid. Raise FileNotFoundError if the PID file does not exist. Raise ProcessLookupError and remove the PID file if no process has the PID."""
+    pid = getPid() # Try to get the PID in the PID file, this will raise en exception if the file is missing
+
+    try:
+        os.kill(pid, 0) # Send signal 0 to the process, this will raise OSError if the process doesn't exist
+    
+    except OSError:
+        dprint("PID invalid")
+        removePid() # Remove the PID file since its wrong
+        raise ProcessLookupError("PID invalid")
+
+def sendPause(waitSafeTime=None):
+    """If a valid PID is found in the PID file send SIGUSR1 to the process."""
+    try:
+        dprint("Sending pause")
+
+        checkPid() # Check if the PID file point's to a valid process
+
+        global havePaused
+        havePaused = True # Save that we have paused the process
+        
+        os.kill(getPid(), signal.SIGUSR1) # Pause the process
+
+        if waitSafeTime == None:
+            waitSafeTime = settings["loopDelay"] * 3 # Set how long we should wait
+
+        time.sleep(waitSafeTime) # Wait a bit to make sure the process paused itself
+
+    except (FileNotFoundError, ProcessLookupError): # If the PID file doesn't exist or the process isn't valid
+        dprint("No process to pause")
+
+
+def sendResume():
+    """If a valid PID is found in the PID file send SIGUSR2 to the process."""
+    try:
+        dprint("Sending resume")
+        
+        checkPid() # Check if the PID file point's to a valid process
+
+        global havePaused
+        havePaused = False # Save that we have resumed the process
+
+        os.kill(getPid(), signal.SIGUSR2) # Resume the process
+
+    except (FileNotFoundError, ProcessLookupError): # If the PID file doesn't exist or the process isn't 
+        dprint("No process to resume")
+
+def pause(signal, frame):
+    """Ungrab all macro devices."""
+    print("Pausing...")
+
+    global paused
+    paused = True # Save that we have been paused)
+
+    ungrabMacroDevices() # Ungrab all devices so the pausing process can use them
+    closeDevices() # Close our macro devices
+
+def resume(signal, frame):
+    """Grab all macro devices and refresh our setting after being paused (or just if some changes were made we need to load)."""
+    print("Resuming...")
+
+    global paused
+    
+    getSettings() # Refresh our settings
+
+    if paused == True: # If we were paused prior
+        setupMacroDevices() # Set our macro devices up again to detect changes
+        grabMacroDevices() # Grab all our devices back
+
+    paused = False # Save that we are no longer paused
 
 
 
@@ -994,29 +1137,56 @@ if args.layers: # If the user passed --layers
     getLayers() # Show the user all layer json files and their contents
 
 elif args.add: # If the user passed --add
+    sendPause() # Ask a running keebie loop (if one exists) to pause so we can use the devices
+
     grabMacroDevices()
     addKey(args.add) # Launch the key addition shell
 
 elif args.settings: # If the user passed --settings
+    sendPause() # Ask a running keebie loop (if one exists) to pause so it will reload its settings when we're done
+
     editSettings() # Launch the setting editing shell
 
 elif args.detect: # If the user passed --detect
     print(detectKeyboard("/dev/input/")) # Launch the keyboard detection function
 
 elif args.edit: # If the user passed --edit
+    sendPause() # Ask a running keebie loop (if one exists) to pause so we can use the devices
+
     grabMacroDevices()
     editLayer(args.edit) # Launch the layer editing shell
 
 elif args.new: # If the user passed --new
+    sendPause() # Ask a running keebie loop (if one exists) to pause so it will detect the new device when we're done
+
     newDevice() # Launch the device addition shell
 
 elif args.remove: # If the user passed --remove
+    sendPause() # Ask a running keebie loop (if one exists) to pause so it will detect the removed device when we're done
+
     removeDevice(args.remove) # Launch the device removal shell
 
 else: # If the user passed nothing
+    try:
+        savePid() # Try to save our PID to the PID file
+
+    except FileExistsError: # If the PID file already exists
+        try:
+            checkPid() # Check if it is valid, this will raise an error if it isn't
+            print("Another instance of keebie is already processing macros, exiting...") 
+            end()
+
+        except ProcessLookupError: # If the PID file pointed to an invalid PID
+            savePid() # Save our PID to the PID file (which checkPid() will have removed)
+
+    signal.signal(signal.SIGUSR1, pause) # Bind SIGUSR1 to pause()
+    signal.signal(signal.SIGUSR2, resume) # Bind SIGUSR2 to remove()
+
     time.sleep(.5)
     grabMacroDevices() # Grab all the devices
 
     while True : # Enter an infinite loop
-        readDevices() # Read all devices and process the keycodes
+        if paused == False: # If we are not paused
+            readDevices() # Read all devices and process the keycodes
+    
         time.sleep(settings["loopDelay"]) # Sleep so we don't eat the poor little CPU
