@@ -20,7 +20,7 @@ pkg: pre-pkg
 	-a all \
 	-p ../ \
 	-n keebie \
-	-d python3 -d python3-evdev \
+	-d python3 -d python3-evdev -d inotify-tools \
 	--maintainer $(maintainer) \
 	--version $(version) \
 	--iteration $(iteration) \
@@ -63,6 +63,9 @@ install:
 	sudo cp -rv -t $(install_path)/ ./setup_tools/
 
 	sudo ./packaging/postinst
+	
+	@echo "keebie has been installed, please ensure you have the following packages:"
+	@echo "python3 python3-evdev inotify-tools"
 
 
 remove:
