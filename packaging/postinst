@@ -1,5 +1,0 @@
-#!/bin/bash
-
-sudo mkdir -pv "/var/run/keebie/"
-
-sudo chmod -v 777 "/var/run/keebie/"

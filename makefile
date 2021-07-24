@@ -28,8 +28,6 @@ pkg: pre-pkg
 	--url https://github.com/robinuniverse/Keebie \
 	--description "A keyboard macro utility for Linux." \
 	--exclude "*.keep" \
-	--after-install "./packaging/postinst" \
-	--after-remove "./packaging/postrm" \
 	./keebie.py=$(bin_path) \
 	./layers/=$(install_path)/data/layers \
 	./settings.json=$(install_path)/data/ \
@@ -38,6 +36,8 @@ pkg: pre-pkg
 	./setup_tools/=$(install_path)/setup_tools
 
 	# --before-install "./packaging/preinst" \
+	# --after-install "./packaging/postinst" \
+	# --after-remove "./packaging/postrm" \
 	# --before-install "./packaging/prerm" \
 
 

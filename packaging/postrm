@@ -1,3 +1,0 @@
-#!/bin/bash
-
-sudo rm -rfv "/var/run/keebie/"

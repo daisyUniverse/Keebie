@@ -33,7 +33,7 @@ layerDir = dataDir + "layers/" # Cache the full path to the /layers directory
 deviceDir = dataDir + "devices/" # Cache the full path to the /devices directory
 scriptDir = dataDir + "scripts/" # Cache the full path to the /scripts directory
 
-pidPath = "/var/run/keebie/keebie.pid" # A Path into which we should store the PID of a running looping instance of keebie
+pidPath = dataDir + "running.pid" # A Path into which we should store the PID of a running looping instance of keebie
 
 
 
