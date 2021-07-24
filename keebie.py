@@ -1023,6 +1023,18 @@ def checkPid():
         removePid() # Remove the PID file since its wrong
         raise ProcessLookupError("PID invalid")
 
+def sendStop():
+    """If a valid PID is found in the PID file send SIGINT to the process."""
+    try:
+        dprint("Sending stop")
+
+        checkPid() # Check if the PID file point's to a valid process
+        
+        os.kill(getPid(), signal.SIGINT) # Stop the process
+
+    except (FileNotFoundError, ProcessLookupError): # If the PID file doesn't exist or the process isn't valid
+        dprint("No process to stop")
+
 def sendPause(waitSafeTime=None):
     """If a valid PID is found in the PID file send SIGUSR1 to the process."""
     try:
@@ -1042,7 +1054,6 @@ def sendPause(waitSafeTime=None):
 
     except (FileNotFoundError, ProcessLookupError): # If the PID file doesn't exist or the process isn't valid
         dprint("No process to pause")
-
 
 def sendResume():
     """If a valid PID is found in the PID file send SIGUSR2 to the process."""
@@ -1111,6 +1122,14 @@ try:
 except FileNotFoundError :
     parser.add_argument("--remove", "-r", help="Remove specified device, if no device is specified you will be prompted", nargs="?", default=False, const=True, metavar="device")
     
+parser.add_argument("--pause", "-P", help="Pause a running keebie instance that is processing macros", action="store_true")
+
+parser.add_argument("--resume", "-R", help="Resume a keebie instance paused by --pause", action="store_true")
+
+parser.add_argument("--stop", "-S", help="Stop a running keebie instance that is processing macros", action="store_true")
+
+parser.add_argument("--install", "-I", help="Install default files to your home's .config/ directory", action="store_true")
+
 parser.add_argument("--verbose", "-v", help="Print extra debugging information", action="store_true")
 
 args = parser.parse_args()
@@ -1165,6 +1184,19 @@ elif args.remove: # If the user passed --remove
     sendPause() # Ask a running keebie loop (if one exists) to pause so it will detect the removed device when we're done
 
     removeDevice(args.remove) # Launch the device removal shell
+
+elif args.pause: # If the user passed --pause
+    sendPause(0) # Ask a running keebie loop (if one exists) to pause
+    havePaused = False
+
+elif args.resume: # If the user passed --resume
+    sendResume() # Ask a running keebie loop (if one exists) to resume
+
+elif args.stop: # If the user passed --stop
+    sendStop() # Ask a running keebie loop (if one exists) to run end()
+
+elif args.install: # If the user passed --install
+    firstUses() # Perform first time setup
 
 else: # If the user passed nothing
     try:
