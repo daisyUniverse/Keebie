@@ -51,6 +51,18 @@ Keebie is basically a small script for assigning and executing commands on a the
  - `--verbose`, `-v`
    - Makes Keebie more verbose, good for debugging.
 
+ - `--pause`, `-P`
+   - Pause keebie (if a normal instance is running).
+ 
+ - `--resume`, `-R`
+   - Resume keebie (if a normal instance is running).
+ 
+ - `--stop`, `-S`
+   - Stop keebie (if a normal instance is running).
+ 
+ - `--install`, `-I`
+   - Install default files to your home's `.config/` directory (this gets done automatically if they arn't present).
+
  - `-h`, `--help`
    - Print usage information.
 
