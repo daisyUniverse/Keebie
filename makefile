@@ -62,7 +62,7 @@ install:
 	sudo cp -rv -t $(install_path)/data/ ./layers/ ./settings.json ./devices/ ./scripts/
 	sudo cp -rv -t $(install_path)/ ./setup_tools/
 
-	sudo ./packaging/postinst
+	# sudo ./packaging/postinst
 	
 	@echo "keebie has been installed, please ensure you have the following packages:"
 	@echo "python3 python3-evdev inotify-tools"
