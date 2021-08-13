@@ -15,10 +15,10 @@ import shutil
 
 # Utilities
 
-print_debugs = False # Whether we should print debug information
+printDebugs = False # Whether we should print debug information
 
 def dprint(*args, **kwargs): # Print debug info (or don't)
-    if print_debugs == True :
+    if printDebugs == True :
         print(*args, **kwargs)
 
 
@@ -43,7 +43,7 @@ devicesAreGrabbed = False # A bool to track if devices have beed grabbed
 
 savedPid = False # A bool to store if this process has writen to the PID file
 paused = False # A bool to store if the process has sent a pause signal to a running keebie loop
-havePaused = False # A bool to store if this process has been signaled to pause by wnother instance
+havePaused = False # A bool to store if this process has been signaled to pause by another instance
 
 def signal_handler(signal, frame):
     end()
@@ -68,124 +68,176 @@ def end(): # Properly close the device file and exit the script
 # Key Ledger
 
 class keyLedger():
-    """A class for finding all keys pressed at any time."""
+    """A class for tracking which keys are pressed, as well how how long and how recently."""
     def __init__(self, name="unnamed ledger"):
-        self.name = name # Name of the ledger for debugging
-
-        self.keysList = [] # A list of keycodes of keys being held as strings
-        self.newKeysList = [] # A list of keycodes of keys that were newly held when update() was last run as strings
-        self.freshKeysList = [] # A list of keycodes of keys being held as strings that is empty unless a new key was pressed when update() was last run
-    
-    def update(self, keyEvent):
-        """Take an event and and updates the lists of keys accordingly."""
-        self.newKeysList = [] # They are no longer new
-        self.freshKeysList = [] # They are no longer fresh
-
-        if keyEvent.type == ecodes.EV_KEY: # If the event is a related to a key, as opposed to a mouse movement or something (At least I think thats what this does)
-            keyEvent = categorize(keyEvent) # Convert our EV_KEY input event into a KeyEvent
-            keycode = keyEvent.keycode # Cache value that we are about to use a lot
-            keystate = keyEvent.keystate
-
-            if type(keycode) == list: # If the keycode is a list of keycodes (it can happen) 
-                keycode = keycode[0] # Select the first one
-
-            if keystate == keyEvent.key_down or keystate == keyEvent.key_hold: # If a new key has been pressed or a key we might have missed the down event for is being held
-                if not keycode in self.keysList: # If this key (which is held) is not in our list of keys that are held
-                    dprint(f"{self.name}) New key tracked: {keycode}")
-                    self.keysList += [keycode, ] # Add list of our (one) keycode to list of held keys
-                    self.newKeysList += [keycode, ] # and to our list of newly held keys
-
-            elif keystate == keyEvent.key_up: # If a key has been released
-                if keycode in self.keysList: # And if we have that key marked as held
-                    dprint(f"{self.name}) Tracked key {keycode} released.")
-                    self.keysList.remove(keycode) # Then we remove it from our list of held keys
-
-                else:
-                    print(f"{self.name}) Untracked key {keycode} released.") # If you see this that means we missed a key press, bad news. (But not fatal.)
-
-            if settings["multiKeyMode"] == "combination": # If running in combination mode
-                self.keysList.sort() # Sort key lists deterministically
-                self.newKeysList.sort()
-
-            if not self.newKeysList == []: # If new keys have pressed
-                self.freshKeysList = self.keysList # Set fresh keys equal to helf keys
-                dprint(f"{self.name}) New keys are: {self.newKeysList}") # Print debug info
-                dprint(f"{self.name}) Fresh keys are: {self.freshKeysList}")
-
-    def getList(self, returnType = 0):
-        """Returns the list of held keys in different forms based on returnType.
+        self.name = name # Name of the ledger for debug prints
         
-        returnType values :
-        0 - Returns the list as it is stored, as a list of strings.
-        1 - Returns a single string with keycodes separated by \"+\"s, for use when reading/writing a layer json file.        
-        """
-        if returnType == 0: # If we just want the list
-            return self.keysList # Return it
-
-        elif returnType == 1: # If we want a string 
-            keyListParsed = ""
-            
-            for keycode in self.keysList:
-                keyListParsed += keycode # Build the string out of keycodes
-                
-                if not keycode is self.keysList[-1]: # If this isn't the last keycode
-                    keyListParsed += "+" # Add a + to separate it from the previous keycode
-
-            return keyListParsed # Return the parsed string 
-
-        else: # If we don't recognize the return type
-            print(f"Unrecognized value for returnType: {returnType}, returning None, expect errors!") # Say so
-            return None
-
-    def getNew(self, returnType = 0):
-        """Returns the list of newly held keys in different forms based on returnType.
+        self.state = 3 # An int representing the state of the ledger; 0, 1, 2, 3 : rising, falling, holding, stale
+        self.stateChangeStamp = time.time() # The timestamp of the last state change
+        self.peaking = False # Are we peaking (adding new keys; rising or holding)
         
-        returnType values :
-        0 - Returns the list as it is stored, as a list of strings.
-        1 - Returns a single string with keycodes separated by \"+\"s, for use when reading/writing a layer json file.        
-        """
-        if returnType == 0: # If we just want the list
-            return self.newKeysList # Return it
+        self.history = "" # Current history of recent key peaks
+        self.histories = [] # List of flushed histories
 
-        elif returnType == 1: # If we want a string 
-            keyListParsed = ""
-            
-            for keycode in self.newKeysList:
-                keyListParsed += keycode # Build the string out of keycodes
-                
-                if not keycode is self.newKeysList[-1]: # If this isn't the last keycode
-                    keyListParsed += "+" # Add a + to separate it from the previous keycode
+        self.newKeys = [] # List of keys newly down
+        self.lostKeys = [] # List of keys newly lost
+        self.downKeys = [] # List of keys being held down
 
-            return keyListParsed # Return the parsed string 
-
-        else: # If we don't recognize the return type
-            print(f"Unrecognized value for returnType: {returnType}, returning None, expect errors!") # Say so
-            return None
-
-    def getFresh(self, returnType = 0):
-        """Returns the fresh (empty unless new keys were added last update()) list of held keys in different forms based on returnType.
+    def newKeysStr(self):
+        """Return a str of concatenated new keys."""
+        keysParsed = ""
         
-        returnType values :
-        0 - Returns the list as it is stored, as a list of strings.
-        1 - Returns a single string with keycodes separated by \"+\"s, for use when reading/writing a layer json file.        
-        """
-        if returnType == 0: # If we just want the list
-            return self.freshKeysList # Return it
-
-        elif returnType == 1: # If we want a string 
-            keyListParsed = ""
+        for keycode in self.newKeys: # For all new keys
+            keysParsed += keycode + "+" # Add them to the string along with a "+"
             
-            for keycode in self.freshKeysList:
-                keyListParsed += keycode # Build the string out of keycodes
+        return keysParsed.rstrip("+") # Return the string we biult with the trailing "+" stripped
+
+    def lostKeysStr(self):
+        """Return a str of concatenated lost keys."""
+        keysParsed = ""
+        
+        for keycode in self.lostKeys: # For all lost keys
+            keysParsed += keycode + "+" # Add them to the string along with a "+"
+
+        return keysParsed.rstrip("+") # Return the string we biult with the trailing "+" stripped
+
+    def downKeysStr(self):
+        """Return a str of concatenated down keys."""
+        keysParsed = ""
+        
+        for keycode in self.downKeys: # For all down keys
+            keysParsed += keycode + "+" # Add them to the string along with a "+"
+
+        return keysParsed.rstrip("+") # Return the string we biult with the trailing "+" stripped
+        
+    def stateChange(self, newState, timestamp = None):
+        """Change the ledger state and record the timestamp."""
+        if not self.state == newState: # If the newState is actually new
+            self.state = newState # Change self.state
+
+            if timestamp == None: # If no timestamp was specified
+                timestamp = time.time() # Use the current time
+
+            self.stateChangeStamp = timestamp # Record the timestamp
+            # dprint(f"{self.name}) new state {newState} at {timestamp}")
+
+    def stateDuration(self, timestamp = None):
+        """Return a float of how long our current state has lasted."""
+        if timestamp == None: # If no timestamp was specified
+            timestamp = time.time() # Use the current time
+
+        return timestamp - self.stateChangeStamp # Return the time since state change
+
+    def addHistoryEntry(self, entry = None, held = None, timestamp = None):
+        """Add an entry to our history."""
+        if entry == None: # If no entry was specified
+            entry = self.downKeysStr() # Use the currently down keys
+
+        if held == None: # If the whether the key was held was not specified
+            held = self.stateDuration((timestamp)) > settings["holdThreshold"] # Set held True if the length of last state surpassed holdThreshold setting
+
+        entry += "+HELD" * held # If held is True note that into the entry
+
+        if not self.history == "": # If the current history is not empty
+            self.history += "-" # Add a "-" to our history to separate key peaks
+
+        self.history += entry # Add entry to our history
+
+        dprint(f"{self.name}) added {entry} to history")
+        # dprint(f"{self.name}) history is \"{self.history}\"")
+
+    def flushHistory(self):
+        """Flush our current history into our histories list."""
+        dprint(f"{self.name}) flushing {self.history}")
+
+        self.histories += [self.history, ] # Add our history to our histories
+        self.history = "" # Clear our history
+
+    def popHistory(self):
+        """Pop the nest item out of our histories list and return it, returns a blank string if no history is available."""
+        try: # Try to..
+            dprint(f"{self.name}) popping {self.histories[0]}")
+            return self.histories.pop(0) # Pop and return the first element of our histories list
+
+        except IndexError: # If no history is available
+            return "" # Return an empty string
+
+    def update(self, events=()):
+        """Update the ledger with an iteratable of key events (or Nones to update timers)."""
+        flushedHistory = False # A bool to store if we flushed any histories this update
+        
+        for event in events: # For each passed event
+            self.newKeys = [] # They are no longer new
+            self.lostKeys = [] # What once was lost...
+
+            timestamp = None # A float (or None) for the timestamp of the event, will be passed to other methods
+            if not event == None: # If the event is not None
+                timestamp = event.timestamp() # Set timestamp to the event's timestamp
                 
-                if not keycode is self.freshKeysList[-1]: # If this isn't the last keycode
-                    keyListParsed += "+" # Add a + to separate it from the previous keycode
+                if event.type == ecodes.EV_KEY: # If the event is a related to a key, as opposed to a mouse movement or something (At least I think thats what this does)
+                    event = categorize(event) # Convert our EV_KEY input event into a KeyEvent
+                    keycode = event.keycode # Store the event's keycode
+                    keystate = event.keystate # Store the event's key state
 
-            return keyListParsed # Return the parsed string 
+                    if type(keycode) == list: # If the keycode is a list of keycodes (it can happen) 
+                        keycode = keycode[0] # Select the first one
 
-        else: # If we don't recognize the return type
-            print(f"Unrecognized value for returnType: {returnType}, returning None, expect errors!") # Say so
-            return None
+                    if keystate in (event.key_down, event.key_hold): # If the key is down
+                        if not keycode in self.downKeys: # If the key is not known to be down
+                            self.newKeys += [keycode, ] # Add the key to our new keys
+
+                    elif keystate == event.key_up: # If the key was released
+                        if keycode in self.downKeys: # If the key was in our down keys
+                            self.lostKeys += [keycode, ] # Add the key to our lost keys
+
+                        else: # If the key was not known to be down
+                            print(f"{self.name}) Untracked key {keycode} released.") # Print a warning
+
+            if not self.newKeys == []: # if we have new keys (rising edge)
+                dprint(f"{self.name}) >{'>' * len(self.downKeys)} " \
+                    f"rising with new keys {self.newKeysStr()}")
+                
+                self.downKeys += self.newKeys # Add our new keys to our down keys
+                self.peaking = True # Store that we are peaking
+
+                if settings["multiKeyMode"] == "combination": # If we are in combination mode
+                    self.downKeys.sort() # Sort our down keys to negate the order they were added in
+                
+                self.stateChange(0, timestamp) # Change to state 0
+
+            elif not self.lostKeys == []: # If we lost keys (falling edge)
+                dprint(f"{self.name}) {'<' * len(self.downKeys)}" \
+                    f" falling with lost keys {self.lostKeysStr()}")
+
+                if self.peaking == True: # If we were peaking
+                    self.addHistoryEntry(timestamp=timestamp) # Add current down keys (peak keys) to our history
+                    self.peaking = False # We are no longer peaking
+                    
+                for keycode in self.lostKeys: # For each lost key
+                    self.downKeys.remove(keycode) # Remove it from our down keys
+                
+                self.stateChange(1, timestamp) # Change to state 1
+                
+            elif not self.downKeys == []: # If no keys were added or lost, but we still have down keys (holding)
+                # dprint(f"{self.name}) {'-' * len(self.downKeys)}" \
+                #     f" holding with down keys {self.downKeysStr()}" \
+                #     f" since {str(self.stateChangeStamp)[7:17]}" \
+                #     f" for {str(self.stateDuration(timestamp))[0:10]}" \
+                #     f" {'held' * (self.stateDuration((timestamp)) > settings['holdThreshold'])}")
+
+                self.stateChange(2, timestamp) # Change to state 2
+
+            else: # If no keys were added or lost but we don't have any down keys (stale)
+                # dprint(f"{self.name}) stale since {str(self.stateChangeStamp)[7:17]}" \
+                #     f" for {str(self.stateDuration(timestamp))[0:10]}")
+
+                self.stateChange(3, timestamp) # Change to state 3
+
+                if self.stateDuration(timestamp) > settings["flushTimeout"] and not self.history == "": # If the duration of this stale state has surpassed flushTimeout setting
+                    self.flushHistory() # Flush our current history
+                    flushedHistory = True # Store that we did so
+
+        return flushedHistory # Return whether we flushed any histories
 
 
 
@@ -241,14 +293,17 @@ class macroDevice():
 
     def read(self, process=True):
         """Read all queued events (if any), update the ledger, and process the keycodes (or don't)."""
+        flushedHistories = False # A bool to store if we flushed any histories this update
         try: # Try to...
-            for event in self.device.read(): # Read queued events from the device
-                self.ledger.update(event) # Update the key ledger
-                if process == True: # If we are processing the ledger
-                    self.processLedger() # Process the newly updated ledger
+            flushedHistories = self.ledger.update(self.device.read()) # Update our ledger with any available events
 
         except BlockingIOError: # If no events are available
-            pass
+            flushedHistories = self.ledger.update((None, )) # Update our ledger so things get flushed if need be
+
+        if process == True and flushedHistories == True: # If we are processing the ledger
+            self.processLedger() # Process the newly updated ledger
+
+        return flushedHistories # Return whether we flushed any histories
 
     def setLeds(self):
         """Set device leds bassed on current layer."""
@@ -272,11 +327,14 @@ class macroDevice():
                 self.device.set_led(led, 0) # Set it off
 
     def processLedger(self):
-        """Given a keycode that might be in the current layer json file, check if it is and execute the appropriate commands"""
-        keycode = self.ledger.getFresh(1) # Get a string of fresh keys
-        if keycode == "": # If there are no fresh keys
-            return
+        """Process any flushed histories from our ledger."""
+        keycode = self.ledger.popHistory() # Pop a history
+        while not keycode == "": # As long as the history we have isn't blank
+            self.processKeycode(keycode) # Process it
+            keycode = self.ledger.popHistory() # And grab the next one (blank if none are available)
         
+    def processKeycode(self, keycode):
+        """Parse a command in our current layer bound to the passed keycode (ledger history)."""
         dprint(f"{self.name} is processing {keycode} in layer {self.currentLayer}") # Print debug info
 
         if keycode in readJson(self.currentLayer): # If the keycode is in our current layer's json file
@@ -314,8 +372,6 @@ class macroDevice():
                     "exec": "",
                 }
 
-                isScript = False # If the value is a script
-
                 for scriptType in scriptTypes.keys(): # For recognized script types
                     if value.startswith(scriptType + ":"): # Check if value is one of said script types
                         print(f"Executing {scriptTypes[scriptType]}script {value.split(':')[-1]}") # Notify the user we re running a script
@@ -323,7 +379,7 @@ class macroDevice():
                         isScript = True # Set that this is a script
                         break # Break the loop
                 
-                if isScript == False: # If this is not a script (i.e. it is a shell command)
+                else: # If this is not a script (i.e. it is a shell command)
                     print(keycode+": "+value) # Notify the user of the command
                 
                 os.system(value) # Execute value
@@ -402,9 +458,11 @@ def mergeDeviceLedgers():
     returnLedger = keyLedger() # Create an empty key ledger
     
     for device in macroDeviceList: # For all macroDevices
-        returnLedger.keysList += device.ledger.keysList # Add the devices held keys to the retunrn ledger
-        returnLedger.newKeysList += device.ledger.newKeysList # Add the devices new keys to the retunrn ledger
-        returnLedger.freshKeysList += device.ledger.freshKeysList # Add the devices fresh keys to the retunrn ledger
+        returnLedger.newKeys += device.ledger.newKeys # Add the devices key lists to the return ledger
+        returnLedger.lostKeys += device.ledger.lostKeys
+        returnLedger.downKeys += device.ledger.downKeys
+
+        returnLedger.histories += device.ledger.histories # Add the devices histories to the return ledger
 
     return returnLedger # Return the ledger we built
 
@@ -415,8 +473,23 @@ def clearDeviceLedgers():
 
 def readDevices(process=True):
     """Read and optionally process all devices events."""
-    for device in macroDeviceList:
-        device.read(process)
+    flushedHistories = False # A bool to store if we flushed any histories this update
+    for device in macroDeviceList: # For all macroDevices
+        if device.read(process) == True: # If any of our devices flush any histories
+            flushedHistories = True # Store that
+
+    return flushedHistories # Return whether we flushed any histories
+
+def popDeviceHistories():
+    """Pop and return all histories of all devices as a list."""
+    histories = [] # A list for poped histories
+    for device in macroDeviceList: # For all macroDevices
+        keycode = device.ledger.popHistory() # Pop a history
+        while not keycode == "": # As long as the history we have isn't blank
+            histories += [keycode, ] # Add it to the list
+            keycode = device.ledger.popHistory() # And grab the next one (blank if none are available)
+
+    return histories # Return the histories we got
 
 
 
@@ -475,6 +548,8 @@ settings = { # A dict of settings to be used across the script
     "forceBackground": False,
     "backgroundInversion": False,
 	"loopDelay": 0.0167,
+    "holdThreshold": 1,
+    "flushTimeout": 0.5,
 }
 
 settingsPossible = { # A dict of lists of valid values for each setting (or if first element is type then list of acceptable types in descending priority)
@@ -482,6 +557,8 @@ settingsPossible = { # A dict of lists of valid values for each setting (or if f
     "forceBackground": [True, False],
     "backgroundInversion": [True, False],
 	"loopDelay": [type, float, int],
+    "holdThreshold": [type, float, int],
+    "flushTimeout": [type, float, int],
 }
 
 def getSettings(): # Reads the json file specified on the third line of config and sets the values of settings based on it's contents
@@ -580,8 +657,6 @@ def detectKeyboard(path = "/dev/input/by-id/"): # Detect what file a keypress is
     return dev
 
 def addKey(layer = "default.json", key = None, command = None, keycodeTimeout = 1): # Shell for adding new macros
-    ledger = keyLedger() # Reset the keyLedger
-
     if key == None and command == None:
         relaunch = True
     else:
@@ -609,24 +684,14 @@ def addKey(layer = "default.json", key = None, command = None, keycodeTimeout = 
                 writeJson(command.split(':')[-1]+".json", {"leds": onLedsInt}) # Write the input list to the layer file
 
     if key == None:
-        print(f"Please press the key combination you would like to assign the command to and hold it for {keycodeTimeout} seconds until the next prompt.")
-
-        loopStartTime = None
-        signal.signal(signal.SIGINT, signal_handler)
+        print(f"Please the execute keystrokes you would like to assign the command to and wait for the next prompt.")
 
         clearDeviceLedgers() # Clear all device ledgers
+        
+        while readDevices(False) == False: # Read events until a history is flushed
+            pass
 
-        started = False # Whether the timer is started
-        while True: # Start an endless loop
-            readDevices(False) # Read all devices (but don't process keycodes)
-            if started == False and not mergeDeviceLedgers().getList(0) == []: # If the timer hasn't started yet and keys are being pressed
-                started = True # Start the timer
-                loopStartTime = time.time() # Set time stamp for comparison
-
-            if not loopStartTime == None and not time.time() - loopStartTime < keycodeTimeout: # Unless the time runs out
-                break # Then we break the loop    
-
-        key = mergeDeviceLedgers().getList(1)
+        key = popDeviceHistories()[0] # Store the first history
 
     inp = input(f"Assign {command} to [{key}]? [Y/n] ") # Ask the user if we (and they) got the command and binding right
     if inp == 'Y' or inp == '': # If we did 
@@ -880,7 +945,7 @@ def editLayer(layer = "default.json"): # Shell for editing a layer file (default
     rep = input("Would you like to edit another binding? [Y/n] ") # Offer the user to edit another binding
 
     if rep == 'Y' or rep == '': # If they say yes
-        editLayer() # Restart the shell
+        editLayer(layer) # Restart the shell
 
     else:
         end()
@@ -900,30 +965,7 @@ def newDevice(eventPath = "/dev/input/"):
     eventFile = detectKeyboard(eventPath) # Prompt the user for a device
     eventFile = os.path.basename(eventFile) # Get the devices filename from its filepath
 
-    # allUdevProperties = subprocess.check_output("udevadm info -a --name=/dev/input/" + eventFile + " | grep -P \"[^=\s]+==\\\"[^=\s]+\\\"\"", shell=True).decode('utf-8')
-
-    # udevProperties = []
-    # for property in allUdevProperties.splitlines():
-    #     udevProperties += [str(property).strip(), ]
-
     input("\nA udev rule will be made next, sudo may prompt you for a password. Press enter to continue...") # Ensure the stdin is empty
-
-    # for propertyIndex in range(0, len(udevProperties)):
-    #     print(f"-{propertyIndex + 1}: {udevProperties[propertyIndex]}")
-
-    # selectedProperties = input("Please select properties by thier numbers (comma and/or space separated list), if unsure look for \"ATTRS{idVendor}\" and \"ATTRS{idProduct}\"")
-    # selectedProperties = selectedProperties.replace(",", " ").split()
-
-    # selectedPropertiesInts = []
-    # for property in selectedProperties:
-    #     selectedPropertiesInts.append(int(property))
-
-    # dprint(selectedPropertiesInts)
-
-    # selectedPropertiesList = []
-    # for propertyIndex in range(1, len(udevProperties) + 1):
-    #     if propertyIndex in selectedPropertiesInts:
-    #         selectedPropertiesList += [udevProperties[propertyIndex - 1], ]
 
     selectedPropertiesList = [f"KERNEL==\"{eventFile}\""] # Make an udev rule matching the device file
 
@@ -1134,7 +1176,8 @@ parser.add_argument("--verbose", "-v", help="Print extra debugging information",
 
 args = parser.parse_args()
 
-print_debugs = args.verbose
+printDebugs = args.verbose
+
 
 
 # Main code
