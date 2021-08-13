@@ -90,7 +90,7 @@ class keyLedger():
         for keycode in self.newKeys: # For all new keys
             keysParsed += keycode + "+" # Add them to the string along with a "+"
             
-        return keysParsed.rstrip("+") # Return the string we biult with the trailing "+" stripped
+        return keysParsed.rstrip("+") # Return the string we built with the trailing "+" stripped
 
     def lostKeysStr(self):
         """Return a str of concatenated lost keys."""
@@ -99,7 +99,7 @@ class keyLedger():
         for keycode in self.lostKeys: # For all lost keys
             keysParsed += keycode + "+" # Add them to the string along with a "+"
 
-        return keysParsed.rstrip("+") # Return the string we biult with the trailing "+" stripped
+        return keysParsed.rstrip("+") # Return the string we built with the trailing "+" stripped
 
     def downKeysStr(self):
         """Return a str of concatenated down keys."""
@@ -108,7 +108,7 @@ class keyLedger():
         for keycode in self.downKeys: # For all down keys
             keysParsed += keycode + "+" # Add them to the string along with a "+"
 
-        return keysParsed.rstrip("+") # Return the string we biult with the trailing "+" stripped
+        return keysParsed.rstrip("+") # Return the string we built with the trailing "+" stripped
         
     def stateChange(self, newState, timestamp = None):
         """Change the ledger state and record the timestamp."""
