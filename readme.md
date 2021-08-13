@@ -6,7 +6,7 @@ More keyboards = faster hacking
 
 #### What does it do:
 
-Keebie is basically a small script for assigning and executing commands on a theoretically unlimited number of keyboards. So you can make the spacebar search for a window and paste something. Or make the M button run a script.
+Keebie is basically a small script for assigning and executing commands on a theoretically unlimited number of keyboards. So you can make the spacebar search for a window and paste something. Or make the M button run a script. Or even crazier things like triple tapping a key combination to execute a command.
 
 
 
