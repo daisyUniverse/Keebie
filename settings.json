@@ -2,5 +2,7 @@
 	"multiKeyMode": "combination",
 	"forceBackground": false,
 	"backgroundInversion": false,
-	"loopDelay": 0.1
+	"loopDelay": 0.1,
+	"holdThreshold": 0.5,
+	"flushTimeout": 0.33
 }

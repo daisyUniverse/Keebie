@@ -6,7 +6,7 @@ install_path="/usr/share/keebie/"
 pkg_type="tar"
 
 maintainer="Michael Basaj <michaelbasaj@protonmail.com>"
-version="1.1.0"
+version="1.2.0"
 iteration="0"
 # .SILENT:
 

@@ -6,7 +6,7 @@ More keyboards = faster hacking
 
 #### What does it do:
 
-Keebie is basically a small script for assigning and executing commands on a theoretically unlimited number of keyboards. So you can make the spacebar search for a window and paste something. Or make the M button run a script.
+Keebie is basically a small script for assigning and executing commands on a theoretically unlimited number of keyboards. So you can make the spacebar search for a window and paste something. Or make the M button run a script. Or even crazier things like triple tapping a key combination to execute a command.
 
 
 
@@ -87,6 +87,12 @@ Keebie has a few settings that may be edited with `--settings` (or `-s`), here i
 
  - `loopDelay`
    - Decides how often Keebie reads devices. Higher values lead to less responsive macros, lower values lead to higher CPU usage, setting this to 0 will eat a lot of CPU time.
+
+ - `holdThreshold`
+   - How many seconds a key combination must be held without adding or removing keys in order for it to be recoreded as held.
+
+ - `flushTimeout`
+   - How many seconds to wait for more keystrokes before deciding a keystroke sequence has ended.
 
 
 
