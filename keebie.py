@@ -308,16 +308,21 @@ class macroDevice():
     def setLeds(self):
         """Set device leds bassed on current layer."""
         if "leds" in readJson(self.currentLayer): # If the current layer specifies LEDs
-            leds = self.device.capabilities()[17] # Get a list of LEDs the device has
+            if 17 in self.device.capabilities().keys(): # Check if the device had LEDs
+                leds = self.device.capabilities()[17] # Get a list of LEDs the device has
 
-            onLeds = readJson(self.currentLayer)["leds"] # Get a list of LEDs to turn on
-            dprint(f"device {self.name} setting leds {onLeds} on")
+                onLeds = readJson(self.currentLayer)["leds"] # Get a list of LEDs to turn on
+                dprint(f"device {self.name} setting leds {onLeds} on")
 
-            for led in leds: # For all LEDs on the board
-                if led in onLeds: # If the LED is to be set on
-                    self.device.set_led(led, 1) # Set it on
-                else:
-                    self.device.set_led(led, 0) # Set it off
+                for led in leds: # For all LEDs on the board
+                    if led in onLeds: # If the LED is to be set on
+                        self.device.set_led(led, 1) # Set it on
+                    else:
+                        self.device.set_led(led, 0) # Set it off
+
+            else:
+                dprint("Device has no LEDs")
+
         else:
             print(f"Layer {readJson(self.currentLayer)} has no leds property, writing empty")
             writeJson(self.currentLayer, {"leds": []}) # Write an empty list for LEDs into the current layer
@@ -376,7 +381,6 @@ class macroDevice():
                     if value.startswith(scriptType + ":"): # Check if value is one of said script types
                         print(f"Executing {scriptTypes[scriptType]}script {value.split(':')[-1]}") # Notify the user we re running a script
                         value = scriptTypes[scriptType] + scriptDir + value.split(':')[-1] # Set value to executable format
-                        isScript = True # Set that this is a script
                         break # Break the loop
                 
                 else: # If this is not a script (i.e. it is a shell command)
@@ -1006,8 +1010,8 @@ def removeDevice(name = None):
 # Setup
 
 def firstUses(): # Setup to be run when a user first runs keebie
-    shutil.copytree(installDataDir + "data/", dataDir) # Copy template configuration files to user
-    print(f"configuration files copied from {installDataDir}/data/ to {dataDir}") # And inform the user
+    shutil.copytree(installDataDir + "data/", dataDir, dirs_exist_ok=True) # Copy template configuration files to user
+    print(f"Configuration files copied from {installDataDir}/data/ to {dataDir}") # And inform the user
 
 
 
