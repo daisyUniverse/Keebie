@@ -707,7 +707,7 @@ def addKey(layer = "default.json", key = None, command = None, keycodeTimeout = 
 
     if key == None:
         print(f"Please the execute keystrokes you would like to assign the command to and wait for the next prompt.")
-        key = getHistory()()
+        key = getHistory()
 
     inp = input(f"Assign {command} to [{key}]? [Y/n] ") # Ask the user if we (and they) got the command and binding right
     if inp == 'Y' or inp == '': # If we did 
