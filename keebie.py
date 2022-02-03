@@ -17,11 +17,16 @@ import shutil
 
 printDebugs = False # Whether we should print debug information
 
+# Hide some output not strictly needed for interactivity
+quietMode = False
+
 def dprint(*args, **kwargs): # Print debug info (or don't)
     if printDebugs == True :
         print(*args, **kwargs)
 
-
+def qprint(*args, **kwargs): # Print debug info (or don't)
+    if quietMode == False :
+        print(*args, **kwargs)
 
 # Global vars
 
@@ -49,7 +54,7 @@ def signal_handler(signal, frame):
     end()
 
 def end(): # Properly close the device file and exit the script
-    print() # Make sure there is a newline
+    qprint() # Make sure there is a newline
 
     if devicesAreGrabbed == True: # If we need to clean up grabbed macroDevices
         ungrabMacroDevices() # Ungrab all devices
@@ -274,7 +279,7 @@ class macroDevice():
 
     def grabDevice(self):
         """Grab the device and set self.device to the grabbed device."""
-        print("grabbing device " + self.name)
+        qprint("grabbing device " + self.name)
         self.device = InputDevice(self.eventFile) # Set self.device to the device of self.eventFile
         self.device.grab() # Grab the device
 
@@ -282,12 +287,12 @@ class macroDevice():
 
     def ungrabDevice(self):
         """Ungrab the device."""
-        print("ungrabbing device " + self.name)
+        qprint("ungrabbing device " + self.name)
         self.device.ungrab() # Do the thing that got said twice
 
     def close(self):
         """Try to close the device file gracefully."""
-        print("closing device " + self.name)
+        qprint("closing device " + self.name)
 
         self.device.close() # Close the device
 
@@ -632,6 +637,14 @@ def parseVars(commandStr, layer): # Given a command from the layer json file rep
     return returnStr # All done, return the result
 
 
+# Custom
+def detectKey():
+    clearDeviceLedgers() # Clear all device ledgers
+    
+    while readDevices(False) == False: # Read events until a history is flushed
+        pass
+    
+    return popDeviceHistories()[0] # Store the first history
 
 # Shells
 
@@ -689,13 +702,7 @@ def addKey(layer = "default.json", key = None, command = None, keycodeTimeout = 
 
     if key == None:
         print(f"Please the execute keystrokes you would like to assign the command to and wait for the next prompt.")
-
-        clearDeviceLedgers() # Clear all device ledgers
-        
-        while readDevices(False) == False: # Read events until a history is flushed
-            pass
-
-        key = popDeviceHistories()[0] # Store the first history
+        key = detectKey()
 
     inp = input(f"Assign {command} to [{key}]? [Y/n] ") # Ask the user if we (and they) got the command and binding right
     if inp == 'Y' or inp == '': # If we did 
@@ -1148,6 +1155,7 @@ parser = argparse.ArgumentParser() # Set up command line arguments
 
 parser.add_argument("--layers", "-l", help="Show saved layer files", action="store_true")
 parser.add_argument("--detect", "-d", help="Detect keyboard device file", action="store_true")
+parser.add_argument("--detect-key", "-k", help="Detect key press", action="store_true")
 
 try:
     parser.add_argument("--add", "-a", help="Adds new macros to the selected layer file (or default layer if unspecified)", nargs="?", default=False, const="default.json", metavar="layer", choices=[i for i in os.listdir(layerDir) if os.path.splitext(i)[1] == ".json"])
@@ -1178,15 +1186,19 @@ parser.add_argument("--install", "-I", help="Install default files to your home'
 
 parser.add_argument("--verbose", "-v", help="Print extra debugging information", action="store_true")
 
+parser.add_argument("--quiet", "-q", help="Print less", action="store_true")
+
 args = parser.parse_args()
 
 printDebugs = args.verbose
+quietMode = args.quiet or args.detect_key
 
 
 
 # Main code
 
-print("Welcome to Keebie")
+if not args.detect_key:
+    print("Welcome to Keebie")
 
 signal.signal(signal.SIGINT, signal_handler)
 
@@ -1201,6 +1213,12 @@ getSettings() # Get settings from the json file in config
 
 if args.layers: # If the user passed --layers
     getLayers() # Show the user all layer json files and their contents
+
+elif args.detect_key:
+    sendPause() # Ask a running keebie loop (if one exists) to pause so we can use the devices
+    grabMacroDevices()
+    print(detectKey())
+    end()
 
 elif args.add: # If the user passed --add
     sendPause() # Ask a running keebie loop (if one exists) to pause so we can use the devices
