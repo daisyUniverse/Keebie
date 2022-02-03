@@ -24,7 +24,7 @@ def dprint(*args, **kwargs): # Print debug info (or don't)
     if printDebugs == True :
         print(*args, **kwargs)
 
-def qprint(*args, **kwargs): # Print debug info (or don't)
+def qprint(*args, **kwargs): # Print less then necessary info (or don't)
     if quietMode == False :
         print(*args, **kwargs)
 
@@ -184,6 +184,8 @@ class keyLedger():
                     keycode = event.keycode # Store the event's keycode
                     keystate = event.keystate # Store the event's key state
 
+                    # dprint(timestamp)
+
                     if type(keycode) == list: # If the keycode is a list of keycodes (it can happen) 
                         keycode = keycode[0] # Select the first one
 
@@ -199,6 +201,7 @@ class keyLedger():
                             print(f"{self.name}) Untracked key {keycode} released.") # Print a warning
 
             if not self.newKeys == []: # if we have new keys (rising edge)
+                # dprint()
                 dprint(f"{self.name}) >{'>' * len(self.downKeys)} " \
                     f"rising with new keys {self.newKeysStr()}")
                 
@@ -211,6 +214,7 @@ class keyLedger():
                 self.stateChange(0, timestamp) # Change to state 0
 
             elif not self.lostKeys == []: # If we lost keys (falling edge)
+                # dprint()
                 dprint(f"{self.name}) {'<' * len(self.downKeys)}" \
                     f" falling with lost keys {self.lostKeysStr()}")
 
@@ -224,21 +228,22 @@ class keyLedger():
                 self.stateChange(1, timestamp) # Change to state 1
                 
             elif not self.downKeys == []: # If no keys were added or lost, but we still have down keys (holding)
-                # dprint(f"{self.name}) {'-' * len(self.downKeys)}" \
+                # dprint(end = f"{self.name}) {'-' * len(self.downKeys)}" \
                 #     f" holding with down keys {self.downKeysStr()}" \
                 #     f" since {str(self.stateChangeStamp)[7:17]}" \
                 #     f" for {str(self.stateDuration(timestamp))[0:10]}" \
-                #     f" {'held' * (self.stateDuration((timestamp)) > settings['holdThreshold'])}")
+                #     f" {'held' * (self.stateDuration((timestamp)) > settings['holdThreshold'])}\r")
 
                 self.stateChange(2, timestamp) # Change to state 2
 
             else: # If no keys were added or lost but we don't have any down keys (stale)
-                # dprint(f"{self.name}) stale since {str(self.stateChangeStamp)[7:17]}" \
-                #     f" for {str(self.stateDuration(timestamp))[0:10]}")
+                # dprint(end = f"{self.name}) stale since {str(self.stateChangeStamp)[7:17]}" \
+                #     f" for {str(self.stateDuration(timestamp))[0:10]}\r")
 
                 self.stateChange(3, timestamp) # Change to state 3
 
                 if self.stateDuration(timestamp) > settings["flushTimeout"] and not self.history == "": # If the duration of this stale state has surpassed flushTimeout setting
+                    # dprint()
                     self.flushHistory() # Flush our current history
                     flushedHistory = True # Store that we did so
 
@@ -636,15 +641,15 @@ def parseVars(commandStr, layer): # Given a command from the layer json file rep
 
     return returnStr # All done, return the result
 
-
-# Custom
-def detectKey():
+def getHistory(): # Return the first key history we get from any of our devices
     clearDeviceLedgers() # Clear all device ledgers
     
     while readDevices(False) == False: # Read events until a history is flushed
-        pass
+        time.sleep(settings["loopDelay"]) # Sleep so we don't eat the poor little CPU
     
     return popDeviceHistories()[0] # Store the first history
+
+
 
 # Shells
 
@@ -702,7 +707,7 @@ def addKey(layer = "default.json", key = None, command = None, keycodeTimeout = 
 
     if key == None:
         print(f"Please the execute keystrokes you would like to assign the command to and wait for the next prompt.")
-        key = detectKey()
+        key = getHistory()()
 
     inp = input(f"Assign {command} to [{key}]? [Y/n] ") # Ask the user if we (and they) got the command and binding right
     if inp == 'Y' or inp == '': # If we did 
@@ -1155,7 +1160,7 @@ parser = argparse.ArgumentParser() # Set up command line arguments
 
 parser.add_argument("--layers", "-l", help="Show saved layer files", action="store_true")
 parser.add_argument("--detect", "-d", help="Detect keyboard device file", action="store_true")
-parser.add_argument("--detect-key", "-k", help="Detect key press", action="store_true")
+parser.add_argument("--print-keys", "-k", help="Print a series of keystrokes", action="store_true")
 
 try:
     parser.add_argument("--add", "-a", help="Adds new macros to the selected layer file (or default layer if unspecified)", nargs="?", default=False, const="default.json", metavar="layer", choices=[i for i in os.listdir(layerDir) if os.path.splitext(i)[1] == ".json"])
@@ -1191,13 +1196,13 @@ parser.add_argument("--quiet", "-q", help="Print less", action="store_true")
 args = parser.parse_args()
 
 printDebugs = args.verbose
-quietMode = args.quiet or args.detect_key
+quietMode = args.quiet or args.print_keys
 
 
 
 # Main code
 
-if not args.detect_key:
+if not args.print_keys:
     print("Welcome to Keebie")
 
 signal.signal(signal.SIGINT, signal_handler)
@@ -1214,10 +1219,10 @@ getSettings() # Get settings from the json file in config
 if args.layers: # If the user passed --layers
     getLayers() # Show the user all layer json files and their contents
 
-elif args.detect_key:
+elif args.print_keys:
     sendPause() # Ask a running keebie loop (if one exists) to pause so we can use the devices
     grabMacroDevices()
-    print(detectKey())
+    print(getHistory()) # Print the first key history we get from any of our devices
     end()
 
 elif args.add: # If the user passed --add
