@@ -230,6 +230,7 @@ My small keyboard with numlock ON sends the following keycodes:
 
 Key|Keycode|Keycode Symbol
 ---|--------|----
+`NumLock`|69|KEY_NUMLOCK
 `/`|98|KEY_KPSLASH
 `*`|55|KEY_KPASTERISK
 `Backspace`|14|KEY_BACKSPACE
@@ -244,6 +245,7 @@ Key|Keycode|Keycode Symbol
 `1`|79|KEY_KP1
 `2`|80|KEY_KP2
 `3`|81|KEY_KP3
+`Enter|96|`KEY_KPENTER
 `0`|82|KEY_KP0
 `.`|83|KEY_KPDOT
 
@@ -287,58 +289,75 @@ Welcome to Keebie
 Available Layers:
 
 test.json{
-    "leds": [],
-    "vars": {
-        "greeting": "test"
-    },
-    "KEY_KPSLASH": "layer:obs",
-    "KEY_KPASTERISK": "layer:test",
-    "KEY_BACKSPACE": "layer:numpad",
-    "KEY_KP0": "echo '%greeting%!'",
-    "KEY_KP1": "echo '%greeting%!'"
+  "leds": [],
+  "vars": {
+    "greeting": "test"
+  },
+  "KEY_KPSLASH": "layer:obs",
+  "KEY_KPASTERISK": "layer:test",
+  "KEY_BACKSPACE": "layer:numpad",
+  "KEY_KP0": "echo '%greeting%!'",
+  "KEY_KP1": "echo '%greeting%!'",
+}
+
+numpad.json{
+  "leds": [],
+  "vars": {},
+  "KEY_KPSLASH": "layer:obs",
+  "KEY_KPASTERISK": "layer:test",
+  "KEY_BACKSPACE": "layer:numpad",
+  "KEY_KPMINUS": "/usr/bin/wpctl set-volume @DEFAULT_AUDIO_SINK@ 5%%-",
+  "KEY_KPMINUS-KEY_KPMINUS": "/usr/bin/wpctl set-volume @DEFAULT_AUDIO_SINK@ 10%%-",
+  "KEY_KPMINUS-KEY_KPMINUS-KEY_KPMINUS": "/usr/bin/wpctl set-mute @DEFAULT_AUDIO_SINK@ 1",
+  "KEY_KPPLUS": "/usr/bin/wpctl set-volume -l 1.5 @DEFAULT_AUDIO_SINK@ 5%%+",
+  "KEY_KPPLUS-KEY_KPPLUS": "/usr/bin/wpctl set-volume -l 1.5 @DEFAULT_AUDIO_SINK@ 10%%+",
+  "KEY_KPPLUS-KEY_KPPLUS-KEY_KPPLUS": "/usr/bin/wpctl set-mute @DEFAULT_AUDIO_SINK@ 0",
+  "KEY_KP0": "",
+  "KEY_KP1": "",
+  "KEY_KP2": "",
+  "KEY_KP3": "",
+  "KEY_KP4": "/usr/bin/cvlc /usr/share/sounds/freedesktop/stereo/audio-channel-front-left.oga vlc://quit",
+  "KEY_KP5": "/usr/bin/cvlc /usr/share/sounds/freedesktop/stereo/audio-channel-front-center.oga vlc://quit",
+  "KEY_KP6": "/usr/bin/cvlc /usr/share/sounds/freedesktop/stereo/audio-channel-front-right.oga vlc://quit",
+  "KEY_KP7": "'",
+  "KEY_KP8": "",
+  "KEY_KP9": ""
 }
 
 default.json{
-        "leds": [],
-        "vars": {
-                "greeting": "Hello World"
-        },
-        "KEY_SPACE": "echo '%greeting%!'",
-        "KEY_ESC": "layer:default"
+  "leds": [],
+  "vars": {
+    "greeting": "Hello World"
+  },
+  "KEY_SPACE": "echo '%greeting%!'",
+  "KEY_ESC": "layer:default"
  }
-
-numpad.json{
-    "leds": [],
-    "vars": {
-        "greeting": "numpad"
-    },
-    "KEY_KPSLASH": "layer:obs",
-    "KEY_KPASTERISK": "layer:test",
-    "KEY_BACKSPACE": "layer:numpad",
-    "KEY_KPMINUS": "/usr/bin/cvlc  /usr/share/sounds/freedesktop/stereo/audio-channel-front-left.oga vlc://quit",
-    "KEY_KPPLUS": "/usr/bin/cvlc  /usr/share/sounds/freedesktop/stereo/audio-channel-front-right.oga vlc://quit",
-    "KEY_KP0": "echo '%greeting%!'",
-    "KEY_KP1": "echo '%greeting%!'"
-}
 
 obs.json{
-    "leds": [],
-    "vars": {
-        "greeting": "obs"
-    },
-    "KEY_KPSLASH": "layer:obs",
-    "KEY_KPASTERISK": "layer:test",
-    "KEY_BACKSPACE": "layer:numpad",
-    "KEY_KP0": "echo '%greeting%!'",
-    "KEY_KP1": "echo '%greeting%!'",
-    "KEY_BACKSPACE": "layer:numpad"
- }
+  "leds": [],
+  "vars": {
+    "OBSWS": "obsws://127.0.0.1:4455/password"
+  },
+  "KEY_KPSLASH": "layer:obs",
+  "KEY_KPASTERISK": "layer:test",
+  "KEY_BACKSPACE": "layer:numpad",
+  "KEY_KP0": "/usr/local/bin/obs-cmd -w %OBSWS% scene switch 'Scene'",
+  "KEY_KPENTER": "/usr/local/bin/obs-cmd -w %OBSWS% scene switch 'Scene 2'"
+}
 ```
+
+Note:
+
+* the use of `KEY_KPMINUS` / `KEY_KPPLUS` to control volume - see
+[my notes on Mint](https://asokolsky.github.io/linux/mint.html#volume-control-cli)
+* use of double and triple key clicks to invoke various commands - double click
+speeds up volume adjustment, triple clicks invokes mute/unmute.
+* use of [obs-cmd](https://github.com/grigio/obs-cmd) to switch OBS scenes -
+see [my notes on obs-cmd](https://asokolsky.github.io/apps/obs/obs-cmd.html).
 
 ## TODO
 
 Document use of:
 
-* how to make OBS switch scene
 * LEDs in the layer file
 * translate one key sequence into another key sequence - is it even possible?
